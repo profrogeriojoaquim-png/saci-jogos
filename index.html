@@ -39,14 +39,9 @@
         }
         button:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
         button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        .btn-secundario {
-            background: #718096;
-            margin-left: 10px;
-        }
+        .btn-secundario { background: #718096; margin-left: 10px; }
         .btn-secundario:hover { background: #5a67d8; }
-        .btn-voltar {
-            background: #48bb78;
-        }
+        .btn-voltar { background: #48bb78; }
         .btn-voltar:hover { background: #38a169; }
         .hidden { display: none; }
         .pergunta {
@@ -114,7 +109,6 @@
         .feedback-sucesso { background: #c6f6d5; color: #22543d; }
         .feedback-erro { background: #fed7d7; color: #742a2a; }
         .feedback-dica { background: #feebc8; color: #744210; }
-        .feedback-aviso { background: #feebc8; color: #744210; border: 2px solid #ed8936; }
         .timer { font-size: 24px; font-weight: bold; color: #667eea; }
         .icone-som {
             position: fixed;
@@ -173,15 +167,8 @@
             margin: 15px 0;
             text-align: center;
         }
-        .ranking-texto {
-            font-size: 18px;
-            font-weight: bold;
-            color: #4a5568;
-        }
-        .ranking-destaque {
-            font-size: 24px;
-            color: #667eea;
-        }
+        .ranking-texto { font-size: 18px; font-weight: bold; color: #4a5568; }
+        .ranking-destaque { font-size: 24px; color: #667eea; }
         .modal {
             position: fixed;
             top: 0;
@@ -268,20 +255,19 @@
             <div class="progresso"><div class="progresso-bar" id="progressoBar"></div></div>
             <div class="pergunta" id="pergunta"></div>
             <div class="opcoes" id="opcoes"></div>
-            <!-- SEM botão de dica na primeira tentativa -->
             <div class="feedback hidden" id="feedback"></div>
             <div class="botoes-container">
                 <button onclick="sairJogo()" class="btn-secundario" style="background: #e53e3e;">🚪 SAIR DO JOGO</button>
             </div>
         </div>
 
-        <!-- Tela de revisão OBRIGATÓRIA (sem pular) -->
+        <!-- Tela de revisão OBRIGATÓRIA -->
         <div id="telaRevisao" class="hidden">
             <h1>📚 REVISÃO OBRIGATÓRIA</h1>
             <p id="msgRevisao"></p>
             <div id="revisaoContainer" class="relatorio-erros"></div>
             <div class="botoes-container">
-                <button id="btnProximoRevisao" onclick="proximoItemRevisao()" disabled>▶ PRÓXIMA QUESTÃO</button>
+                <button id="btnProximoRevisao" onclick="proximoItemRevisao()" disabled>▶ CONFIRMAR APRENDIZADO</button>
                 <button onclick="sairJogo()" class="btn-secundario" style="background: #e53e3e;">🚪 SAIR</button>
             </div>
         </div>
@@ -380,9 +366,10 @@
         const statusConexao = document.getElementById('statusConexao');
         const mensagemBoasVindas = document.getElementById('mensagemBoasVindas');
 
+        // ======================== VALIDAÇÃO DE ACESSO (CORRIGIDA - NÃO TRAVA) ========================
         async function validarAcesso() {
             if (!ALUNO_ID || !JOGO_ID) {
-                statusConexao.innerHTML = "⚠️ Link inválido! Parâmetros ausentes. O jogo não salvará sua pontuação.";
+                statusConexao.innerHTML = "⚠️ Link inválido! Parâmetros ausentes.";
                 statusConexao.style.color = "#e53e3e";
                 btnIniciar.disabled = true;
                 return false;
@@ -393,20 +380,34 @@
                     .from('alunos')
                     .select('nome_aluno')
                     .eq('id', ALUNO_ID)
-                    .single();
+                    .maybeSingle();
                 
-                if (error) throw error;
+                if (error) {
+                    console.log("Erro na consulta:", error);
+                    mensagemBoasVindas.innerHTML = `🧩 Sequência Numérica`;
+                    statusConexao.innerHTML = "";
+                    btnIniciar.disabled = false;
+                    return true;
+                }
+                
                 if (data && data.nome_aluno) {
                     nomeAluno = data.nome_aluno;
                     mensagemBoasVindas.innerHTML = `🧩 Olá, ${nomeAluno}! Prepare-se para a missão!`;
+                } else {
+                    mensagemBoasVindas.innerHTML = `🧩 Sequência Numérica`;
                 }
+                
+                statusConexao.innerHTML = "";
                 btnIniciar.disabled = false;
                 return true;
+                
             } catch (erro) {
                 console.error("Erro ao buscar aluno:", erro);
-                statusConexao.innerHTML = "⚠️ Erro ao carregar seus dados.";
-                btnIniciar.disabled = true;
-                return false;
+                // NÃO TRAVA O JOGO - apenas usa nome padrão
+                mensagemBoasVindas.innerHTML = `🧩 Sequência Numérica`;
+                statusConexao.innerHTML = "";
+                btnIniciar.disabled = false;
+                return true;
             }
         }
 
@@ -455,11 +456,9 @@
         let tempoTotal = 0;
         let timerInterval = null;
         
-        // Variáveis para revisão obrigatória
         let revisaoIndex = 0;
         let itensRevisao = [];
         let dicasUsadasRevisao = 0;
-        let pontosPerdidosDicas = 0;
 
         function mostrarModalProximoNivel(nomeNivel) {
             return new Promise((resolve) => {
@@ -506,7 +505,6 @@
             listaErros = [];
             listaDetalhesErros = [];
             tempoTotal = 0;
-            pontosPerdidosDicas = 0;
             
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
@@ -573,7 +571,6 @@
                 erros++;
                 atualizarContadores();
                 
-                // Registra o erro sem mostrar a resposta correta agora
                 listaErros.push(pergunta);
                 listaDetalhesErros.push({
                     nivel: nivelAtual + 1,
@@ -601,12 +598,9 @@
         function proximaPergunta() {
             perguntaAtual++;
             if (perguntaAtual >= niveis[nivelAtual].perguntas.length) {
-                // Fim do nível - verifica se há erros
                 if (listaErros.length > 0) {
-                    // Força revisão obrigatória
                     iniciarRevisaoObrigatoria();
                 } else {
-                    // Sem erros, avança nível
                     nivelAtual++;
                     perguntaAtual = 0;
                     
@@ -623,9 +617,8 @@
             }
         }
 
-        // ======================== REVISÃO OBRIGATÓRIA (SEM PULAR) ========================
+        // ======================== REVISÃO OBRIGATÓRIA ========================
         function iniciarRevisaoObrigatoria() {
-            // Para o timer durante a revisão
             if (timerInterval) clearInterval(timerInterval);
             
             itensRevisao = [...listaErros];
@@ -641,7 +634,6 @@
 
         function carregarItemRevisao() {
             if (revisaoIndex >= itensRevisao.length) {
-                // Revisão concluída - pode avançar de nível
                 finalizarRevisao();
                 return;
             }
@@ -650,7 +642,6 @@
             const container = document.getElementById('revisaoContainer');
             const btnProximo = document.getElementById('btnProximoRevisao');
             
-            // Habilita o botão apenas após o aluno confirmar que viu a resposta correta
             btnProximo.disabled = true;
             btnProximo.textContent = "▶ CONFIRMAR APRENDIZADO";
             
@@ -669,7 +660,6 @@
                 </div>
             `;
             
-            // Embaralha as opções para a revisão
             const opcoesEmbaralhadas = [...erro.opcoes];
             for (let i = opcoesEmbaralhadas.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -698,7 +688,6 @@
         }
 
         function verificarRespostaRevisao(botao, resposta, correta) {
-            // Impede múltiplos cliques
             const opcoesContainer = document.getElementById('revisaoOpcoes');
             const botoes = opcoesContainer.querySelectorAll('.opcao');
             botoes.forEach(btn => btn.style.pointerEvents = 'none');
@@ -711,11 +700,9 @@
                 mostrarFeedbackRevisao(`❌ Errou novamente! A resposta correta é ${correta}.`, "erro");
             }
             
-            // Mostra a resposta correta
             const respostaContainer = document.getElementById('respostaCorretaContainer');
             respostaContainer.style.display = 'block';
             
-            // Habilita o botão de próximo
             const btnProximo = document.getElementById('btnProximoRevisao');
             btnProximo.disabled = false;
         }
@@ -728,9 +715,7 @@
             
             const erro = itensRevisao[revisaoIndex];
             dicasUsadasRevisao++;
-            pontosPerdidosDicas++;
             
-            // Perde 1 ponto (desconta do acertos)
             if (acertos > 0) acertos--;
             atualizarContadores();
             
@@ -762,7 +747,6 @@
         }
 
         function finalizarRevisao() {
-            // Reinicia o timer
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 tempoTotal++;
@@ -771,7 +755,6 @@
                 document.getElementById('timer').innerHTML = `${min}:${seg}`;
             }, 1000);
             
-            // Limpa os erros do nível atual e avança
             listaErros = [];
             nivelAtual++;
             perguntaAtual = 0;
@@ -946,7 +929,7 @@
             document.getElementById('telaInicial').classList.remove('hidden');
         }
 
-        // Expor funções para o escopo global
+        // Expor funções globais
         window.proximoItemRevisao = proximoItemRevisao;
         window.pedirDicaRevisao = pedirDicaRevisao;
 
