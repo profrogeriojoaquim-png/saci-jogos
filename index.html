@@ -181,6 +181,35 @@
             font-size: 24px;
             color: #667eea;
         }
+        /* Modal de próximo nível */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            text-align: center;
+            animation: bounceIn 0.5s;
+            max-width: 400px;
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .modal h2 { color: #667eea; margin-bottom: 20px; }
+        .modal button { margin-top: 10px; padding: 12px 30px; }
         @keyframes fadeOut {
             0% { opacity: 1; }
             70% { opacity: 1; }
@@ -198,7 +227,6 @@
 <body>
     <div class="icone-som" onclick="alternarSom()" id="somIcone">🔊</div>
     <div class="container">
-        <!-- Tela inicial -->
         <div id="telaInicial">
             <h1>🧩 Sequência Numérica</h1>
             <p>Descubra o próximo número da sequência!</p>
@@ -209,7 +237,6 @@
             </div>
         </div>
 
-        <!-- Tela do jogo -->
         <div id="telaJogo" class="hidden">
             <div class="info">
                 <span class="info-item" id="nivelTexto">Nível 1/4</span>
@@ -220,16 +247,13 @@
             <div class="progresso"><div class="progresso-bar" id="progressoBar"></div></div>
             <div class="pergunta" id="pergunta"></div>
             <div class="opcoes" id="opcoes"></div>
-            <!-- Botão de dica (só aparece na revisão) -->
             <button id="btnDica" class="btn-dica hidden" onclick="mostrarDica()">💡 PEDIR AJUDA (3 disponíveis)</button>
             <div class="feedback hidden" id="feedback"></div>
-            
             <div class="botoes-container">
                 <button onclick="sairJogo()" class="btn-secundario" style="background: #e53e3e;">🚪 SAIR DO JOGO</button>
             </div>
         </div>
 
-        <!-- Tela de recuperação -->
         <div id="telaRecuperacao" class="hidden">
             <h1>📚 Revisão de Aprendizagem</h1>
             <p id="msgRecuperacao"></p>
@@ -241,7 +265,6 @@
             </div>
         </div>
 
-        <!-- Tela final -->
         <div id="telaFinal" class="hidden">
             <h1>🏆 Missão Concluída!</h1>
             <div class="estatisticas">
@@ -251,7 +274,6 @@
                 <div class="estatistica-card"><h3>🎯</h3><p><strong id="resultadoFinalPorcentagem"></strong></p><p>Aproveitamento</p></div>
             </div>
             
-            <!-- Ranking da sala -->
             <div id="rankingContainer" class="ranking-container hidden">
                 <div class="ranking-texto">🏆 Sua posição na sala</div>
                 <div class="ranking-destaque" id="rankingPosicao">--</div>
@@ -315,9 +337,7 @@
         function alternarSom() { somAtivado = !somAtivado; document.getElementById('somIcone').innerHTML = somAtivado ? '🔊' : '🔇'; }
         
         function voltarParaAtividades() {
-            // Tenta fechar a aba (funciona se o jogo foi aberto em popup)
             window.close();
-            // Fallback: tenta voltar para a página anterior
             if (document.referrer) {
                 window.location.href = document.referrer;
             } else {
@@ -325,7 +345,6 @@
             }
         }
 
-        // Dados dos níveis (24 perguntas)
         const niveis = [
             { nome: "Nível 1 - Adição", perguntas: [
                 { texto: "2, 4, 6, ?", opcoes: ["7","8","9","10"], correta: "8", dica: "Some 2 a cada termo" },
@@ -374,6 +393,26 @@
         let tempoTotal = 0;
         let timerInterval = null;
 
+        function mostrarModalProximoNivel(nomeNivel) {
+            return new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <h2>🎉 PARABÉNS!</h2>
+                        <p style="font-size: 24px; margin: 20px 0;">✨ Avançou para o <strong>${nomeNivel}</strong> ✨</p>
+                        <p>Continue assim!</p>
+                        <button onclick="this.closest('.modal').remove()">▶ CONTINUAR</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                modal.querySelector('button').onclick = () => {
+                    modal.remove();
+                    resolve();
+                };
+            });
+        }
+
         function atualizarProgresso() {
             const total = niveis[nivelAtual].perguntas.length;
             const porcentagem = ((perguntaAtual) / total) * 100;
@@ -415,7 +454,6 @@
             document.getElementById('telaRecuperacao').classList.add('hidden');
             document.getElementById('telaFinal').classList.add('hidden');
             
-            // Esconde botão de dica na primeira tentativa
             document.getElementById('btnDica').classList.add('hidden');
             
             atualizarContadores();
@@ -430,7 +468,6 @@
             if (emRecuperacao) {
                 pergunta = recuperandoErros[perguntaAtual];
                 document.getElementById('nivelTexto').innerHTML = `🔄 Revisão - ${niveis[nivelAtual].nome}`;
-                // Mostra botão de dica APENAS na revisão
                 const btnDica = document.getElementById('btnDica');
                 btnDica.classList.remove('hidden');
                 btnDica.disabled = false;
@@ -439,13 +476,11 @@
             } else {
                 pergunta = niveis[nivelAtual].perguntas[perguntaAtual];
                 document.getElementById('nivelTexto').innerHTML = `${niveis[nivelAtual].nome} (${perguntaAtual+1}/6)`;
-                // Esconde botão de dica na primeira tentativa
                 document.getElementById('btnDica').classList.add('hidden');
             }
             
             document.getElementById('pergunta').innerHTML = pergunta.texto;
             
-            // Embaralhar opções
             const opcoesEmbaralhadas = [...pergunta.opcoes];
             for (let i = opcoesEmbaralhadas.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -520,7 +555,6 @@
             if (emRecuperacao) {
                 pergunta = recuperandoErros[perguntaAtual];
             } else {
-                // Não deve acontecer, mas garantia
                 return;
             }
             
@@ -536,7 +570,7 @@
             }
         }
 
-        function proximaPergunta() {
+        async function proximaPergunta() {
             if (emRecuperacao) {
                 perguntaAtual++;
                 if (perguntaAtual >= recuperandoErros.length) {
@@ -547,6 +581,7 @@
                     if (nivelAtual >= niveis.length) {
                         finalizarJogo();
                     } else {
+                        await mostrarModalProximoNivel(niveis[nivelAtual].nome);
                         carregarPergunta();
                     }
                 } else {
@@ -573,6 +608,7 @@
                         if (nivelAtual >= niveis.length) {
                             finalizarJogo();
                         } else {
+                            await mostrarModalProximoNivel(niveis[nivelAtual].nome);
                             carregarPergunta();
                         }
                     }
@@ -607,23 +643,32 @@
             if (nivelAtual >= niveis.length) {
                 finalizarJogo();
             } else {
-                carregarPergunta();
+                mostrarModalProximoNivel(niveis[nivelAtual].nome).then(() => {
+                    carregarPergunta();
+                });
             }
         }
 
         async function buscarRanking(alunoId, turmaId, acertosAtual) {
             try {
-                // Busca todos os resultados da mesma turma
+                console.log("🔍 Buscando ranking para turma:", turmaId);
                 const { data, error } = await supabase
                     .from('resultados')
                     .select('aluno_id, acertos')
                     .eq('turma_id', turmaId);
                 
-                if (error) throw error;
+                if (error) {
+                    console.error("Erro na busca:", error);
+                    return null;
+                }
                 
-                if (!data || data.length === 0) return null;
+                if (!data || data.length === 0) {
+                    console.log("Nenhum resultado encontrado para esta turma.");
+                    return null;
+                }
                 
-                // Conta quantos alunos têm acertos maiores que o atual
+                console.log("Resultados encontrados:", data.length);
+                
                 let posicao = 1;
                 data.forEach(item => {
                     if (item.acertos > acertosAtual) posicao++;
@@ -641,6 +686,8 @@
             const alunoId = urlParams.get('aluno_id');
             const jogoId = urlParams.get('jogo_id');
             const turmaId = urlParams.get('turma_id');
+            
+            console.log("Parâmetros encontrados:", { alunoId, jogoId, turmaId });
             
             if (!alunoId || !jogoId) {
                 console.log("⚠️ Modo teste - sem parâmetros. Resultado não salvo.");
@@ -676,7 +723,6 @@
                     console.log("✅ Resultado salvo com sucesso!");
                     mostrarFeedbackSalvo("✅ Dados enviados ao professor! Seu desempenho foi registrado.", "sucesso");
                     
-                    // Busca ranking após salvar
                     if (turmaId) {
                         const ranking = await buscarRanking(alunoId, turmaId, acertos);
                         if (ranking) {
@@ -684,6 +730,8 @@
                             document.getElementById('rankingPosicao').innerHTML = `${ranking.posicao}º`;
                             document.getElementById('rankingTotal').innerHTML = `entre ${ranking.total} alunos`;
                             rankingContainer.classList.remove('hidden');
+                        } else {
+                            console.log("Ranking não disponível (sem dados suficientes)");
                         }
                     }
                     return true;
@@ -729,7 +777,6 @@
             document.getElementById('resultadoFinalErros').innerHTML = `${24 - acertos}`;
             document.getElementById('resultadoFinalPorcentagem').innerHTML = `${porcentagem}%`;
             
-            // Relatório detalhado
             const listaErrosFinal = document.getElementById('listaErrosFinal');
             listaErrosFinal.innerHTML = '';
             
@@ -752,10 +799,8 @@
             document.getElementById('telaJogo').classList.add('hidden');
             document.getElementById('telaFinal').classList.remove('hidden');
             
-            // Esconde ranking até carregar
             document.getElementById('rankingContainer').classList.add('hidden');
             
-            // Salva e mostra ranking
             salvarResultado();
         }
 
@@ -771,7 +816,6 @@
             document.getElementById('telaInicial').classList.remove('hidden');
         }
 
-        // Ativar áudio após primeiro clique
         document.body.addEventListener('click', () => {
             if (audioCtx && audioCtx.state === 'suspended') {
                 audioCtx.resume();
