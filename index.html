@@ -43,6 +43,10 @@
             margin-left: 10px;
         }
         .btn-secundario:hover { background: #5a67d8; }
+        .btn-voltar {
+            background: #48bb78;
+        }
+        .btn-voltar:hover { background: #38a169; }
         .hidden { display: none; }
         .pergunta {
             font-size: 36px;
@@ -127,6 +131,7 @@
             font-size: 24px;
         }
         .btn-dica { background: #ed8936; font-size: 14px; padding: 8px 20px; margin-top: 0; }
+        .btn-dica:disabled { background: #cbd5e0; cursor: not-allowed; }
         .relatorio-erros {
             background: #fff5f5;
             border: 1px solid #feb2b2;
@@ -158,7 +163,23 @@
             border-radius: 50px;
             margin-top: 20px;
             font-weight: bold;
-            animation: fadeOut 3s forwards;
+            animation: fadeOut 4s forwards;
+        }
+        .ranking-container {
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            border-radius: 15px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .ranking-texto {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4a5568;
+        }
+        .ranking-destaque {
+            font-size: 24px;
+            color: #667eea;
         }
         @keyframes fadeOut {
             0% { opacity: 1; }
@@ -182,7 +203,10 @@
             <h1>🧩 Sequência Numérica</h1>
             <p>Descubra o próximo número da sequência!</p>
             <p>4 níveis • 24 desafios • sistema de recuperação</p>
-            <button onclick="iniciarJogo()">▶ COMEÇAR MISSÃO</button>
+            <div class="botoes-container">
+                <button onclick="iniciarJogo()">▶ COMEÇAR MISSÃO</button>
+                <button onclick="voltarParaAtividades()" class="btn-voltar">← VOLTAR PARA ATIVIDADES</button>
+            </div>
         </div>
 
         <!-- Tela do jogo -->
@@ -196,10 +220,10 @@
             <div class="progresso"><div class="progresso-bar" id="progressoBar"></div></div>
             <div class="pergunta" id="pergunta"></div>
             <div class="opcoes" id="opcoes"></div>
-            <button id="btnDica" class="btn-dica" onclick="mostrarDica()">💡 PEDIR AJUDA (3 disponíveis)</button>
+            <!-- Botão de dica (só aparece na revisão) -->
+            <button id="btnDica" class="btn-dica hidden" onclick="mostrarDica()">💡 PEDIR AJUDA (3 disponíveis)</button>
             <div class="feedback hidden" id="feedback"></div>
             
-            <!-- Botão de navegação: Sair e voltar para os desafios -->
             <div class="botoes-container">
                 <button onclick="sairJogo()" class="btn-secundario" style="background: #e53e3e;">🚪 SAIR DO JOGO</button>
             </div>
@@ -226,14 +250,23 @@
                 <div class="estatistica-card"><h3>❌</h3><p><strong id="resultadoFinalErros"></strong></p><p>Erros</p></div>
                 <div class="estatistica-card"><h3>🎯</h3><p><strong id="resultadoFinalPorcentagem"></strong></p><p>Aproveitamento</p></div>
             </div>
+            
+            <!-- Ranking da sala -->
+            <div id="rankingContainer" class="ranking-container hidden">
+                <div class="ranking-texto">🏆 Sua posição na sala</div>
+                <div class="ranking-destaque" id="rankingPosicao">--</div>
+                <div class="ranking-texto" id="rankingTotal">entre -- alunos</div>
+            </div>
+            
             <div id="msgSalvoContainer"></div>
             <div class="relatorio-erros" id="relatorioErrosFinal">
-                <h4>📝 Questões que o aluno errou (relatório para o professor):</h4>
+                <h4>📝 Questões que você errou (relatório para o professor):</h4>
                 <ul id="listaErrosFinal"></ul>
             </div>
             <div class="botoes-container">
                 <button onclick="reiniciar()">🔄 Jogar Novamente</button>
                 <button onclick="voltarTelaInicial()" class="btn-secundario">🏠 Menu Principal</button>
+                <button onclick="voltarParaAtividades()" class="btn-voltar">← VOLTAR PARA ATIVIDADES</button>
             </div>
         </div>
     </div>
@@ -280,6 +313,17 @@
             }
         }
         function alternarSom() { somAtivado = !somAtivado; document.getElementById('somIcone').innerHTML = somAtivado ? '🔊' : '🔇'; }
+        
+        function voltarParaAtividades() {
+            // Tenta fechar a aba (funciona se o jogo foi aberto em popup)
+            window.close();
+            // Fallback: tenta voltar para a página anterior
+            if (document.referrer) {
+                window.location.href = document.referrer;
+            } else {
+                alert("Feche esta aba para voltar às atividades.");
+            }
+        }
 
         // Dados dos níveis (24 perguntas)
         const niveis = [
@@ -343,9 +387,7 @@
 
         function sairJogo() {
             if (timerInterval) clearInterval(timerInterval);
-            // Tenta fechar a aba (se permitido pelo navegador)
             window.close();
-            // Se não fechar, volta para a tela inicial do jogo
             voltarTelaInicial();
         }
 
@@ -373,6 +415,9 @@
             document.getElementById('telaRecuperacao').classList.add('hidden');
             document.getElementById('telaFinal').classList.add('hidden');
             
+            // Esconde botão de dica na primeira tentativa
+            document.getElementById('btnDica').classList.add('hidden');
+            
             atualizarContadores();
             carregarPergunta();
         }
@@ -380,18 +425,22 @@
         function carregarPergunta() {
             podeResponder = true;
             document.getElementById('feedback').classList.add('hidden');
-            dicasUsadasNivel = 0;
-            const btnDica = document.getElementById('btnDica');
-            btnDica.disabled = false;
-            btnDica.textContent = "💡 PEDIR AJUDA (3 disponíveis)";
             
             let pergunta;
             if (emRecuperacao) {
                 pergunta = recuperandoErros[perguntaAtual];
                 document.getElementById('nivelTexto').innerHTML = `🔄 Revisão - ${niveis[nivelAtual].nome}`;
+                // Mostra botão de dica APENAS na revisão
+                const btnDica = document.getElementById('btnDica');
+                btnDica.classList.remove('hidden');
+                btnDica.disabled = false;
+                dicasUsadasNivel = 0;
+                btnDica.textContent = "💡 PEDIR AJUDA (3 disponíveis)";
             } else {
                 pergunta = niveis[nivelAtual].perguntas[perguntaAtual];
                 document.getElementById('nivelTexto').innerHTML = `${niveis[nivelAtual].nome} (${perguntaAtual+1}/6)`;
+                // Esconde botão de dica na primeira tentativa
+                document.getElementById('btnDica').classList.add('hidden');
             }
             
             document.getElementById('pergunta').innerHTML = pergunta.texto;
@@ -463,7 +512,7 @@
 
         function mostrarDica() {
             if (dicasUsadasNivel >= 3) {
-                mostrarFeedback("Você já usou todas as dicas deste nível!", "erro");
+                mostrarFeedback("Você já usou todas as dicas desta revisão!", "erro");
                 return;
             }
             
@@ -471,7 +520,8 @@
             if (emRecuperacao) {
                 pergunta = recuperandoErros[perguntaAtual];
             } else {
-                pergunta = niveis[nivelAtual].perguntas[perguntaAtual];
+                // Não deve acontecer, mas garantia
+                return;
             }
             
             dicasUsadasNivel++;
@@ -538,6 +588,7 @@
             listaErros = [];
             emRecuperacao = true;
             perguntaAtual = 0;
+            dicasUsadasNivel = 0;
             
             document.getElementById('telaRecuperacao').classList.add('hidden');
             document.getElementById('telaJogo').classList.remove('hidden');
@@ -557,6 +608,31 @@
                 finalizarJogo();
             } else {
                 carregarPergunta();
+            }
+        }
+
+        async function buscarRanking(alunoId, turmaId, acertosAtual) {
+            try {
+                // Busca todos os resultados da mesma turma
+                const { data, error } = await supabase
+                    .from('resultados')
+                    .select('aluno_id, acertos')
+                    .eq('turma_id', turmaId);
+                
+                if (error) throw error;
+                
+                if (!data || data.length === 0) return null;
+                
+                // Conta quantos alunos têm acertos maiores que o atual
+                let posicao = 1;
+                data.forEach(item => {
+                    if (item.acertos > acertosAtual) posicao++;
+                });
+                
+                return { posicao, total: data.length };
+            } catch (erro) {
+                console.error("Erro ao buscar ranking:", erro);
+                return null;
             }
         }
 
@@ -599,6 +675,17 @@
                 if (response.ok) {
                     console.log("✅ Resultado salvo com sucesso!");
                     mostrarFeedbackSalvo("✅ Dados enviados ao professor! Seu desempenho foi registrado.", "sucesso");
+                    
+                    // Busca ranking após salvar
+                    if (turmaId) {
+                        const ranking = await buscarRanking(alunoId, turmaId, acertos);
+                        if (ranking) {
+                            const rankingContainer = document.getElementById('rankingContainer');
+                            document.getElementById('rankingPosicao').innerHTML = `${ranking.posicao}º`;
+                            document.getElementById('rankingTotal').innerHTML = `entre ${ranking.total} alunos`;
+                            rankingContainer.classList.remove('hidden');
+                        }
+                    }
                     return true;
                 } else {
                     const erro = await response.text();
@@ -642,7 +729,7 @@
             document.getElementById('resultadoFinalErros').innerHTML = `${24 - acertos}`;
             document.getElementById('resultadoFinalPorcentagem').innerHTML = `${porcentagem}%`;
             
-            // Relatório detalhado para o professor
+            // Relatório detalhado
             const listaErrosFinal = document.getElementById('listaErrosFinal');
             listaErrosFinal.innerHTML = '';
             
@@ -655,7 +742,7 @@
                         <li style="margin-bottom: 15px; border-bottom: 1px solid #fee; padding-bottom: 10px;">
                             <strong>📌 Nível ${erro.nivel} (${erro.nivelNome})</strong><br>
                             Pergunta: ${erro.pergunta}<br>
-                            ✏️ Resposta do aluno: <span style="color:#e53e3e;">${erro.respostaDada}</span><br>
+                            ✏️ Sua resposta: <span style="color:#e53e3e;">${erro.respostaDada}</span><br>
                             ✅ Resposta correta: <span style="color:#48bb78;">${erro.respostaCorreta}</span>
                         </li>
                     `;
@@ -665,7 +752,10 @@
             document.getElementById('telaJogo').classList.add('hidden');
             document.getElementById('telaFinal').classList.remove('hidden');
             
-            // Salva e mostra mensagem de confirmação
+            // Esconde ranking até carregar
+            document.getElementById('rankingContainer').classList.add('hidden');
+            
+            // Salva e mostra ranking
             salvarResultado();
         }
 
