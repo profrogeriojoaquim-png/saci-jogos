@@ -23,7 +23,7 @@
             background: white;
             border-radius: 30px;
             padding: 30px;
-            max-width: 650px;
+            max-width: 700px;
             width: 100%;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             text-align: center;
@@ -109,6 +109,13 @@
             background: #f8f9fa;
             padding: 15px;
             border-radius: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .info-item {
+            background: white;
+            padding: 8px 15px;
+            border-radius: 20px;
         }
         .progresso {
             width: 100%;
@@ -138,14 +145,14 @@
             background: #fed7d7;
             color: #742a2a;
         }
+        .feedback-dica {
+            background: #feebc8;
+            color: #744210;
+        }
         .timer {
             font-size: 24px;
             font-weight: bold;
             color: #667eea;
-        }
-        .pontuacao {
-            font-size: 18px;
-            color: #48bb78;
         }
         .icone-som {
             position: fixed;
@@ -162,11 +169,53 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             font-size: 24px;
         }
+        .btn-dica {
+            background: #ed8936;
+            font-size: 14px;
+            padding: 8px 20px;
+            margin-top: 0;
+        }
+        .btn-dica:hover {
+            background: #dd6b20;
+        }
+        .relatorio-erros {
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            border-radius: 15px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .relatorio-erros h4 {
+            color: #c53030;
+            margin-bottom: 10px;
+        }
+        .relatorio-erros ul {
+            margin-left: 20px;
+        }
+        .relatorio-erros li {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .estatisticas {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .estatistica-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 15px;
+        }
         @media (max-width: 500px) {
             .container { padding: 20px; }
             .pergunta { font-size: 24px; padding: 20px; }
             .opcao { padding: 12px; font-size: 16px; }
-            .info { font-size: 14px; }
+            .info { font-size: 12px; }
+            .estatisticas { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -187,27 +236,63 @@
         <!-- Tela do jogo -->
         <div id="telaJogo" class="hidden">
             <div class="info">
-                <span id="nivelTexto">Nível 1/4</span>
-                <span class="timer" id="timer">00:00</span>
-                <span class="pontuacao" id="pontuacaoTexto">⭐ 0</span>
+                <span class="info-item" id="nivelTexto">Nível 1/4</span>
+                <span class="info-item timer" id="timer">00:00</span>
+                <span class="info-item" id="pontuacaoTexto">⭐ Acertos: 0</span>
+                <span class="info-item" id="errosTexto">❌ Erros: 0</span>
             </div>
             <div class="progresso">
                 <div class="progresso-bar" id="progressoBar"></div>
             </div>
             <div class="pergunta" id="pergunta"></div>
             <div class="opcoes" id="opcoes"></div>
+            <button id="btnDica" class="btn-dica" onclick="mostrarDica()">💡 PEDIR AJUDA (3 disponíveis)</button>
             <div class="feedback hidden" id="feedback"></div>
+        </div>
+
+        <!-- Tela de recuperação -->
+        <div id="telaRecuperacao" class="hidden">
+            <h1>📚 Revisão de Aprendizagem</h1>
+            <p id="msgRecuperacao"></p>
+            <div class="relatorio-erros" id="relatorioErrosRecuperacao"></div>
+            <button onclick="iniciarRecuperacao()">▶ REVISAR QUESTÕES ERRADAS</button>
+            <button onclick="pularRecuperacao()" style="background: #718096;">⏩ PULAR REVISÃO</button>
         </div>
 
         <!-- Tela final -->
         <div id="telaFinal" class="hidden">
             <h1>🏆 Missão Concluída!</h1>
-            <div style="background: #f8f9fa; border-radius: 20px; padding: 20px; margin: 20px 0;">
-                <p style="font-size: 18px; margin: 10px 0;">📊 <strong id="resultadoFinalAcertos"></strong></p>
-                <p style="font-size: 18px; margin: 10px 0;">⏱️ <strong id="resultadoFinalTempo"></strong></p>
-                <p style="font-size: 18px; margin: 10px 0;">🎯 <strong id="resultadoFinalPorcentagem"></strong></p>
+            
+            <div class="estatisticas">
+                <div class="estatistica-card">
+                    <h3>📊</h3>
+                    <p><strong id="resultadoFinalAcertos"></strong></p>
+                    <p>Acertos</p>
+                </div>
+                <div class="estatistica-card">
+                    <h3>⏱️</h3>
+                    <p><strong id="resultadoFinalTempo"></strong></p>
+                    <p>Tempo Total</p>
+                </div>
+                <div class="estatistica-card">
+                    <h3>❌</h3>
+                    <p><strong id="resultadoFinalErros"></strong></p>
+                    <p>Erros</p>
+                </div>
+                <div class="estatistica-card">
+                    <h3>🎯</h3>
+                    <p><strong id="resultadoFinalPorcentagem"></strong></p>
+                    <p>Aproveitamento</p>
+                </div>
             </div>
+
+            <div class="relatorio-erros" id="relatorioErrosFinal">
+                <h4>📝 Questões que precisam de atenção:</h4>
+                <ul id="listaErrosFinal"></ul>
+            </div>
+
             <button onclick="reiniciar()">🔄 Jogar Novamente</button>
+            <button onclick="voltarTelaInicial()" style="background: #718096; margin-left: 10px;">🏠 Menu Principal</button>
         </div>
     </div>
 
@@ -267,54 +352,69 @@
         // ======================== DADOS DO JOGO ========================
         const niveis = [
             { nome: "Nível 1 - Adição", perguntas: [
-                { texto: "2, 4, 6, ?", opcoes: ["7","8","9","10"], correta: "8" },
-                { texto: "5, 10, 15, ?", opcoes: ["18","20","25","30"], correta: "20" },
-                { texto: "10, 20, 30, ?", opcoes: ["35","40","45","50"], correta: "40" },
-                { texto: "1, 3, 5, ?", opcoes: ["6","7","8","9"], correta: "7" },
-                { texto: "0, 4, 8, ?", opcoes: ["10","12","14","16"], correta: "12" },
-                { texto: "11, 22, 33, ?", opcoes: ["40","44","55","34"], correta: "44" }
+                { texto: "2, 4, 6, ?", opcoes: ["7","8","9","10"], correta: "8", dica: "Some 2 a cada termo" },
+                { texto: "5, 10, 15, ?", opcoes: ["18","20","25","30"], correta: "20", dica: "Some 5 a cada termo" },
+                { texto: "10, 20, 30, ?", opcoes: ["35","40","45","50"], correta: "40", dica: "Some 10 a cada termo" },
+                { texto: "1, 3, 5, ?", opcoes: ["6","7","8","9"], correta: "7", dica: "Números ímpares consecutivos" },
+                { texto: "0, 4, 8, ?", opcoes: ["10","12","14","16"], correta: "12", dica: "Some 4 a cada termo" },
+                { texto: "11, 22, 33, ?", opcoes: ["40","44","55","34"], correta: "44", dica: "Some 11 a cada termo" }
             ]},
             { nome: "Nível 2 - Subtração", perguntas: [
-                { texto: "20, 18, 16, ?", opcoes: ["15","14","13","12"], correta: "14" },
-                { texto: "3, 6, 9, ?", opcoes: ["10","12","14","15"], correta: "12" },
-                { texto: "100, 90, 80, ?", opcoes: ["70","60","50","40"], correta: "70" },
-                { texto: "1, 5, 9, ?", opcoes: ["12","13","14","15"], correta: "13" },
-                { texto: "50, 45, 40, ?", opcoes: ["35","30","25","20"], correta: "35" },
-                { texto: "2, 5, 8, ?", opcoes: ["10","11","12","13"], correta: "11" }
+                { texto: "20, 18, 16, ?", opcoes: ["15","14","13","12"], correta: "14", dica: "Subtraia 2 a cada termo" },
+                { texto: "3, 6, 9, ?", opcoes: ["10","12","14","15"], correta: "12", dica: "Some 3 a cada termo" },
+                { texto: "100, 90, 80, ?", opcoes: ["70","60","50","40"], correta: "70", dica: "Subtraia 10 a cada termo" },
+                { texto: "1, 5, 9, ?", opcoes: ["12","13","14","15"], correta: "13", dica: "Some 4 a cada termo" },
+                { texto: "50, 45, 40, ?", opcoes: ["35","30","25","20"], correta: "35", dica: "Subtraia 5 a cada termo" },
+                { texto: "2, 5, 8, ?", opcoes: ["10","11","12","13"], correta: "11", dica: "Some 3 a cada termo" }
             ]},
             { nome: "Nível 3 - Multiplicação", perguntas: [
-                { texto: "1, 2, 4, ?", opcoes: ["6","8","10","12"], correta: "8" },
-                { texto: "10, 100, 1000, ?", opcoes: ["1010","2000","10000","5000"], correta: "10000" },
-                { texto: "3, 6, 12, ?", opcoes: ["18","24","30","36"], correta: "24" },
-                { texto: "5, 25, 125, ?", opcoes: ["150","250","625","500"], correta: "625" },
-                { texto: "2, 6, 18, ?", opcoes: ["24","36","54","72"], correta: "54" },
-                { texto: "1, 4, 16, ?", opcoes: ["32","48","64","100"], correta: "64" }
+                { texto: "1, 2, 4, ?", opcoes: ["6","8","10","12"], correta: "8", dica: "Dobre o valor (multiplique por 2)" },
+                { texto: "10, 100, 1000, ?", opcoes: ["1010","2000","10000","5000"], correta: "10000", dica: "Multiplique por 10" },
+                { texto: "3, 6, 12, ?", opcoes: ["18","24","30","36"], correta: "24", dica: "Dobre o valor (multiplique por 2)" },
+                { texto: "5, 25, 125, ?", opcoes: ["150","250","625","500"], correta: "625", dica: "Multiplique por 5" },
+                { texto: "2, 6, 18, ?", opcoes: ["24","36","54","72"], correta: "54", dica: "Multiplique por 3" },
+                { texto: "1, 4, 16, ?", opcoes: ["32","48","64","100"], correta: "64", dica: "Multiplique por 4" }
             ]},
             { nome: "Nível 4 - Misto", perguntas: [
-                { texto: "1, 1, 2, 3, ?", opcoes: ["4","5","6","7"], correta: "5" },
-                { texto: "1, 4, 9, ?", opcoes: ["12","15","16","20"], correta: "16" },
-                { texto: "0, 1, 3, 6, ?", opcoes: ["8","9","10","11"], correta: "10" },
-                { texto: "2, 3, 5, 8, ?", opcoes: ["10","12","13","15"], correta: "13" },
-                { texto: "100, 81, 64, ?", opcoes: ["50","49","40","36"], correta: "49" },
-                { texto: "2, 4, 16, ?", opcoes: ["32","64","256","512"], correta: "256" }
+                { texto: "1, 1, 2, 3, ?", opcoes: ["4","5","6","7"], correta: "5", dica: "Sequência de Fibonacci: soma dos dois anteriores" },
+                { texto: "1, 4, 9, ?", opcoes: ["12","15","16","20"], correta: "16", dica: "Quadrados perfeitos (1², 2², 3², 4²)" },
+                { texto: "0, 1, 3, 6, ?", opcoes: ["8","9","10","11"], correta: "10", dica: "Adicione +1, +2, +3, +4..." },
+                { texto: "2, 3, 5, 8, ?", opcoes: ["10","12","13","15"], correta: "13", dica: "Sequência de Fibonacci: soma dos dois anteriores" },
+                { texto: "100, 81, 64, ?", opcoes: ["50","49","40","36"], correta: "49", dica: "Quadrados perfeitos (10², 9², 8², 7²)" },
+                { texto: "2, 4, 16, ?", opcoes: ["32","64","256","512"], correta: "256", dica: "Eleva ao quadrado: 2²=4, 4²=16, 16²=256" }
             ]}
         ];
 
+        // Variáveis de estado
         let nivelAtual = 0;
         let perguntaAtual = 0;
         let acertos = 0;
         let erros = 0;
-        let listaErros = [];
+        let listaErros = []; // Guarda as perguntas erradas
+        let listaDetalhesErros = []; // Guarda detalhes (nível, pergunta, resposta correta)
         let podeResponder = true;
         let emRecuperacao = false;
         let recuperandoErros = [];
+        let dicasUsadasNivel = 0;
         let tempoTotal = 0;
         let timerInterval = null;
+
+        // Elementos DOM
+        const telaInicial = document.getElementById('telaInicial');
+        const telaJogo = document.getElementById('telaJogo');
+        const telaRecuperacao = document.getElementById('telaRecuperacao');
+        const telaFinal = document.getElementById('telaFinal');
+        const btnDica = document.getElementById('btnDica');
 
         function atualizarProgresso() {
             const total = niveis[nivelAtual].perguntas.length;
             const porcentagem = ((perguntaAtual) / total) * 100;
             document.getElementById('progressoBar').style.width = porcentagem + '%';
+        }
+
+        function atualizarContadores() {
+            document.getElementById('pontuacaoTexto').innerHTML = `⭐ Acertos: ${acertos}`;
+            document.getElementById('errosTexto').innerHTML = `❌ Erros: ${erros}`;
         }
 
         function iniciarJogo() {
@@ -323,8 +423,10 @@
             acertos = 0;
             erros = 0;
             listaErros = [];
+            listaDetalhesErros = [];
             emRecuperacao = false;
             tempoTotal = 0;
+            dicasUsadasNivel = 0;
             
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
@@ -334,16 +436,21 @@
                 document.getElementById('timer').innerHTML = `${min}:${seg}`;
             }, 1000);
             
-            document.getElementById('telaInicial').classList.add('hidden');
-            document.getElementById('telaJogo').classList.remove('hidden');
-            document.getElementById('telaFinal').classList.add('hidden');
+            telaInicial.classList.add('hidden');
+            telaJogo.classList.remove('hidden');
+            telaRecuperacao.classList.add('hidden');
+            telaFinal.classList.add('hidden');
             
+            atualizarContadores();
             carregarPergunta();
         }
 
         function carregarPergunta() {
             podeResponder = true;
             document.getElementById('feedback').classList.add('hidden');
+            dicasUsadasNivel = 0;
+            btnDica.disabled = false;
+            btnDica.textContent = "💡 PEDIR AJUDA (3 disponíveis)";
             
             let pergunta;
             if (emRecuperacao) {
@@ -354,7 +461,6 @@
                 document.getElementById('nivelTexto').innerHTML = `${niveis[nivelAtual].nome} (${perguntaAtual+1}/6)`;
             }
             
-            document.getElementById('pontuacaoTexto').innerHTML = `⭐ ${acertos}`;
             document.getElementById('pergunta').innerHTML = pergunta.texto;
             
             const containerOpcoes = document.getElementById('opcoes');
@@ -364,14 +470,14 @@
                 const btn = document.createElement('div');
                 btn.className = 'opcao';
                 btn.innerHTML = opcao;
-                btn.onclick = () => verificarResposta(btn, opcao, pergunta.correta);
+                btn.onclick = () => verificarResposta(btn, opcao, pergunta.correta, pergunta);
                 containerOpcoes.appendChild(btn);
             });
             
             atualizarProgresso();
         }
 
-        function verificarResposta(botao, resposta, correta) {
+        function verificarResposta(botao, resposta, correta, pergunta) {
             if (!podeResponder) return;
             podeResponder = false;
             
@@ -379,7 +485,7 @@
                 botao.classList.add('correto');
                 tocarSom('acerto');
                 if (!emRecuperacao) acertos++;
-                document.getElementById('pontuacaoTexto').innerHTML = `⭐ ${acertos}`;
+                atualizarContadores();
                 mostrarFeedback('✅ Correto!', 'sucesso');
                 
                 setTimeout(() => {
@@ -390,7 +496,16 @@
                 tocarSom('erro');
                 if (!emRecuperacao) {
                     erros++;
-                    listaErros.push(niveis[nivelAtual].perguntas[perguntaAtual]);
+                    atualizarContadores();
+                    // Guarda detalhes do erro
+                    listaErros.push(pergunta);
+                    listaDetalhesErros.push({
+                        nivel: nivelAtual + 1,
+                        nivelNome: niveis[nivelAtual].nome,
+                        pergunta: pergunta.texto,
+                        respostaCorreta: correta,
+                        respostaDada: resposta
+                    });
                 }
                 mostrarFeedback(`❌ Errado! Resposta correta: ${correta}`, 'erro');
                 
@@ -405,6 +520,30 @@
             feedbackDiv.innerHTML = mensagem;
             feedbackDiv.className = `feedback ${tipo === 'sucesso' ? 'feedback-sucesso' : 'feedback-erro'}`;
             feedbackDiv.classList.remove('hidden');
+        }
+
+        function mostrarDica() {
+            if (dicasUsadasNivel >= 3) {
+                mostrarFeedback("Você já usou todas as dicas deste nível!", "erro");
+                return;
+            }
+            
+            let pergunta;
+            if (emRecuperacao) {
+                pergunta = recuperandoErros[perguntaAtual];
+            } else {
+                pergunta = niveis[nivelAtual].perguntas[perguntaAtual];
+            }
+            
+            dicasUsadasNivel++;
+            const dicasRestantes = 3 - dicasUsadasNivel;
+            btnDica.textContent = `💡 PEDIR AJUDA (${dicasRestantes} disponíveis)`;
+            
+            mostrarFeedback(`💡 Dica: ${pergunta.dica}`, 'dica');
+            
+            if (dicasUsadasNivel >= 3) {
+                btnDica.disabled = true;
+            }
         }
 
         function proximaPergunta() {
@@ -427,14 +566,17 @@
                 perguntaAtual++;
                 if (perguntaAtual >= niveis[nivelAtual].perguntas.length) {
                     if (listaErros.length > 0) {
-                        recuperandoErros = [...listaErros];
-                        listaErros = [];
-                        emRecuperacao = true;
-                        perguntaAtual = 0;
-                        mostrarFeedback(`⚠️ Você errou ${recuperandoErros.length} questão(ões). Vamos revisar!`, 'erro');
-                        setTimeout(() => {
-                            carregarPergunta();
-                        }, 1500);
+                        // Mostra tela de recuperação
+                        telaJogo.classList.add('hidden');
+                        telaRecuperacao.classList.remove('hidden');
+                        document.getElementById('msgRecuperacao').innerHTML = `📌 Você errou ${listaErros.length} questão(ões) neste nível. Vamos revisar antes de continuar!`;
+                        
+                        const relatorioDiv = document.getElementById('relatorioErrosRecuperacao');
+                        relatorioDiv.innerHTML = '<h4>📝 Questões para revisar:</h4><ul>';
+                        listaErros.forEach(erro => {
+                            relatorioDiv.innerHTML += `<li>🔴 ${erro.texto} <span style="color:#48bb78;">(Resposta: ${erro.correta})</span></li>`;
+                        });
+                        relatorioDiv.innerHTML += '</ul>';
                     } else {
                         nivelAtual++;
                         perguntaAtual = 0;
@@ -451,6 +593,34 @@
             }
         }
 
+        function iniciarRecuperacao() {
+            recuperandoErros = [...listaErros];
+            erros = 0; // Reseta erros do nível para não contar duplicado
+            listaErros = [];
+            emRecuperacao = true;
+            perguntaAtual = 0;
+            
+            telaRecuperacao.classList.add('hidden');
+            telaJogo.classList.remove('hidden');
+            carregarPergunta();
+        }
+
+        function pularRecuperacao() {
+            nivelAtual++;
+            perguntaAtual = 0;
+            listaErros = [];
+            emRecuperacao = false;
+            
+            telaRecuperacao.classList.add('hidden');
+            telaJogo.classList.remove('hidden');
+            
+            if (nivelAtual >= niveis.length) {
+                finalizarJogo();
+            } else {
+                carregarPergunta();
+            }
+        }
+
         async function salvarResultado() {
             const urlParams = new URLSearchParams(window.location.search);
             const alunoId = urlParams.get('aluno_id');
@@ -462,6 +632,14 @@
                 return;
             }
             
+            // Prepara dados detalhados dos erros
+            const errosDetalhados = listaDetalhesErros.map(e => ({
+                nivel: e.nivel,
+                pergunta: e.pergunta,
+                resposta_correta: e.respostaCorreta,
+                resposta_dada: e.respostaDada
+            }));
+            
             const dados = {
                 aluno_id: alunoId,
                 jogo_id: jogoId,
@@ -470,7 +648,8 @@
                 erros: 24 - acertos,
                 habilidade_bncc: 'EF07MA14',
                 tempo_segundos: tempoTotal,
-                total_questoes: 24
+                total_questoes: 24,
+                erros_detalhados: errosDetalhados
             };
             
             console.log("📤 Enviando para o banco:", dados);
@@ -505,12 +684,32 @@
             const tempoSeg = tempoTotal % 60;
             const porcentagem = Math.round((acertos / 24) * 100);
             
-            document.getElementById('resultadoFinalAcertos').innerHTML = `${acertos} de 24 acertos`;
+            document.getElementById('resultadoFinalAcertos').innerHTML = `${acertos}`;
             document.getElementById('resultadoFinalTempo').innerHTML = `${tempoMin}min ${tempoSeg}s`;
-            document.getElementById('resultadoFinalPorcentagem').innerHTML = `${porcentagem}% de aproveitamento`;
+            document.getElementById('resultadoFinalErros').innerHTML = `${24 - acertos}`;
+            document.getElementById('resultadoFinalPorcentagem').innerHTML = `${porcentagem}%`;
             
-            document.getElementById('telaJogo').classList.add('hidden');
-            document.getElementById('telaFinal').classList.remove('hidden');
+            // Exibe relatório detalhado de erros
+            const listaErrosFinal = document.getElementById('listaErrosFinal');
+            listaErrosFinal.innerHTML = '';
+            
+            if (listaDetalhesErros.length === 0) {
+                listaErrosFinal.innerHTML = '<li style="color:#48bb78;">🎉 Nenhum erro! Parabéns pelo desempenho!</li>';
+                document.getElementById('relatorioErrosFinal').style.background = '#f0fff4';
+            } else {
+                listaDetalhesErros.forEach(erro => {
+                    listaErrosFinal.innerHTML += `
+                        <li>
+                            <strong>Nível ${erro.nivel} (${erro.nivelNome})</strong><br>
+                            Pergunta: ${erro.pergunta}<br>
+                            Sua resposta: ${erro.respostaDada} | Correta: ${erro.respostaCorreta}
+                        </li>
+                    `;
+                });
+            }
+            
+            telaJogo.classList.add('hidden');
+            telaFinal.classList.remove('hidden');
             
             salvarResultado();
         }
@@ -519,6 +718,13 @@
             iniciarJogo();
         }
 
+        function voltarTelaInicial() {
+            if (timerInterval) clearInterval(timerInterval);
+            telaFinal.classList.add('hidden');
+            telaInicial.classList.remove('hidden');
+        }
+
+        // Inicializa áudio
         document.body.addEventListener('click', () => {
             if (audioCtx && audioCtx.state === 'suspended') {
                 audioCtx.resume();
