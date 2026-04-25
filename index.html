@@ -19,7 +19,7 @@
             background: white;
             border-radius: 30px;
             padding: 30px;
-            max-width: 700px;
+            max-width: 750px;
             width: 100%;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             text-align: center;
@@ -38,6 +38,11 @@
             transition: transform 0.2s, box-shadow 0.2s;
         }
         button:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .btn-secundario {
+            background: #718096;
+            margin-left: 10px;
+        }
+        .btn-secundario:hover { background: #5a67d8; }
         .hidden { display: none; }
         .pergunta {
             font-size: 36px;
@@ -104,6 +109,7 @@
         .feedback-sucesso { background: #c6f6d5; color: #22543d; }
         .feedback-erro { background: #fed7d7; color: #742a2a; }
         .feedback-dica { background: #feebc8; color: #744210; }
+        .feedback-salvo { background: #c6f6d5; color: #22543d; border: 2px solid #48bb78; }
         .timer { font-size: 24px; font-weight: bold; color: #667eea; }
         .icone-som {
             position: fixed;
@@ -138,6 +144,27 @@
             margin: 20px 0;
         }
         .estatistica-card { background: #f8f9fa; padding: 15px; border-radius: 15px; }
+        .botoes-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .msg-salvo {
+            background: #48bb78;
+            color: white;
+            padding: 12px;
+            border-radius: 50px;
+            margin-top: 20px;
+            font-weight: bold;
+            animation: fadeOut 3s forwards;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; visibility: hidden; }
+        }
         @media (max-width: 500px) {
             .container { padding: 20px; }
             .pergunta { font-size: 24px; padding: 20px; }
@@ -150,6 +177,7 @@
 <body>
     <div class="icone-som" onclick="alternarSom()" id="somIcone">🔊</div>
     <div class="container">
+        <!-- Tela inicial -->
         <div id="telaInicial">
             <h1>🧩 Sequência Numérica</h1>
             <p>Descubra o próximo número da sequência!</p>
@@ -157,6 +185,7 @@
             <button onclick="iniciarJogo()">▶ COMEÇAR MISSÃO</button>
         </div>
 
+        <!-- Tela do jogo -->
         <div id="telaJogo" class="hidden">
             <div class="info">
                 <span class="info-item" id="nivelTexto">Nível 1/4</span>
@@ -169,16 +198,26 @@
             <div class="opcoes" id="opcoes"></div>
             <button id="btnDica" class="btn-dica" onclick="mostrarDica()">💡 PEDIR AJUDA (3 disponíveis)</button>
             <div class="feedback hidden" id="feedback"></div>
+            
+            <!-- Botão de navegação: Sair e voltar para os desafios -->
+            <div class="botoes-container">
+                <button onclick="sairJogo()" class="btn-secundario" style="background: #e53e3e;">🚪 SAIR DO JOGO</button>
+            </div>
         </div>
 
+        <!-- Tela de recuperação -->
         <div id="telaRecuperacao" class="hidden">
             <h1>📚 Revisão de Aprendizagem</h1>
             <p id="msgRecuperacao"></p>
             <div class="relatorio-erros" id="relatorioErrosRecuperacao"></div>
-            <button onclick="iniciarRecuperacao()">▶ REVISAR QUESTÕES ERRADAS</button>
-            <button onclick="pularRecuperacao()" style="background: #718096;">⏩ PULAR REVISÃO</button>
+            <div class="botoes-container">
+                <button onclick="iniciarRecuperacao()">▶ REVISAR QUESTÕES ERRADAS</button>
+                <button onclick="pularRecuperacao()" class="btn-secundario">⏩ PULAR REVISÃO</button>
+                <button onclick="sairJogo()" class="btn-secundario" style="background: #e53e3e;">🚪 SAIR</button>
+            </div>
         </div>
 
+        <!-- Tela final -->
         <div id="telaFinal" class="hidden">
             <h1>🏆 Missão Concluída!</h1>
             <div class="estatisticas">
@@ -187,9 +226,15 @@
                 <div class="estatistica-card"><h3>❌</h3><p><strong id="resultadoFinalErros"></strong></p><p>Erros</p></div>
                 <div class="estatistica-card"><h3>🎯</h3><p><strong id="resultadoFinalPorcentagem"></strong></p><p>Aproveitamento</p></div>
             </div>
-            <div class="relatorio-erros" id="relatorioErrosFinal"><h4>📝 Questões que precisam de atenção:</h4><ul id="listaErrosFinal"></ul></div>
-            <button onclick="reiniciar()">🔄 Jogar Novamente</button>
-            <button onclick="voltarTelaInicial()" style="background: #718096; margin-left: 10px;">🏠 Menu Principal</button>
+            <div id="msgSalvoContainer"></div>
+            <div class="relatorio-erros" id="relatorioErrosFinal">
+                <h4>📝 Questões que o aluno errou (relatório para o professor):</h4>
+                <ul id="listaErrosFinal"></ul>
+            </div>
+            <div class="botoes-container">
+                <button onclick="reiniciar()">🔄 Jogar Novamente</button>
+                <button onclick="voltarTelaInicial()" class="btn-secundario">🏠 Menu Principal</button>
+            </div>
         </div>
     </div>
 
@@ -236,16 +281,7 @@
         }
         function alternarSom() { somAtivado = !somAtivado; document.getElementById('somIcone').innerHTML = somAtivado ? '🔊' : '🔇'; }
 
-        // Função para embaralhar as opções (para que a resposta correta não fique sempre no mesmo lugar)
-        function embaralharOpcoes(pergunta) {
-            const opcoes = [...pergunta.opcoes];
-            for (let i = opcoes.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [opcoes[i], opcoes[j]] = [opcoes[j], opcoes[i]];
-            }
-            return opcoes;
-        }
-
+        // Dados dos níveis (24 perguntas)
         const niveis = [
             { nome: "Nível 1 - Adição", perguntas: [
                 { texto: "2, 4, 6, ?", opcoes: ["7","8","9","10"], correta: "8", dica: "Some 2 a cada termo" },
@@ -293,7 +329,6 @@
         let dicasUsadasNivel = 0;
         let tempoTotal = 0;
         let timerInterval = null;
-        let opcoesEmbaralhadas = [];
 
         function atualizarProgresso() {
             const total = niveis[nivelAtual].perguntas.length;
@@ -304,6 +339,14 @@
         function atualizarContadores() {
             document.getElementById('pontuacaoTexto').innerHTML = `⭐ Acertos: ${acertos}`;
             document.getElementById('errosTexto').innerHTML = `❌ Erros: ${erros}`;
+        }
+
+        function sairJogo() {
+            if (timerInterval) clearInterval(timerInterval);
+            // Tenta fechar a aba (se permitido pelo navegador)
+            window.close();
+            // Se não fechar, volta para a tela inicial do jogo
+            voltarTelaInicial();
         }
 
         function iniciarJogo() {
@@ -353,8 +396,8 @@
             
             document.getElementById('pergunta').innerHTML = pergunta.texto;
             
-            // Embaralha as opções para que a resposta correta não fique sempre no mesmo lugar
-            opcoesEmbaralhadas = [...pergunta.opcoes];
+            // Embaralhar opções
+            const opcoesEmbaralhadas = [...pergunta.opcoes];
             for (let i = opcoesEmbaralhadas.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [opcoesEmbaralhadas[i], opcoesEmbaralhadas[j]] = [opcoesEmbaralhadas[j], opcoesEmbaralhadas[i]];
@@ -463,7 +506,6 @@
                 perguntaAtual++;
                 if (perguntaAtual >= niveis[nivelAtual].perguntas.length) {
                     if (listaErros.length > 0) {
-                        // Mostra tela de recuperação
                         document.getElementById('telaJogo').classList.add('hidden');
                         document.getElementById('telaRecuperacao').classList.remove('hidden');
                         document.getElementById('msgRecuperacao').innerHTML = `📌 Você errou ${listaErros.length} questão(ões) neste nível. Vamos revisar antes de continuar!`;
@@ -526,7 +568,8 @@
             
             if (!alunoId || !jogoId) {
                 console.log("⚠️ Modo teste - sem parâmetros. Resultado não salvo.");
-                return;
+                mostrarFeedbackSalvo("⚠️ Modo de teste. Resultado NÃO foi salvo no banco.", "erro");
+                return false;
             }
             
             const dados = {
@@ -555,13 +598,35 @@
                 
                 if (response.ok) {
                     console.log("✅ Resultado salvo com sucesso!");
+                    mostrarFeedbackSalvo("✅ Dados enviados ao professor! Seu desempenho foi registrado.", "sucesso");
+                    return true;
                 } else {
                     const erro = await response.text();
                     console.error("❌ Erro ao salvar:", erro);
+                    mostrarFeedbackSalvo(`❌ Erro ao salvar: ${erro}`, "erro");
+                    return false;
                 }
             } catch (erro) {
                 console.error("❌ Erro de conexão:", erro);
+                mostrarFeedbackSalvo(`❌ Erro de conexão: ${erro.message}`, "erro");
+                return false;
             }
+        }
+
+        function mostrarFeedbackSalvo(mensagem, tipo) {
+            const container = document.getElementById('msgSalvoContainer');
+            if (!container) return;
+            
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `msg-salvo ${tipo === 'sucesso' ? 'feedback-salvo' : 'feedback-erro'}`;
+            msgDiv.innerHTML = mensagem;
+            msgDiv.style.animation = 'fadeOut 4s forwards';
+            container.innerHTML = '';
+            container.appendChild(msgDiv);
+            
+            setTimeout(() => {
+                if (msgDiv.parentNode) msgDiv.remove();
+            }, 4000);
         }
 
         function finalizarJogo() {
@@ -577,6 +642,7 @@
             document.getElementById('resultadoFinalErros').innerHTML = `${24 - acertos}`;
             document.getElementById('resultadoFinalPorcentagem').innerHTML = `${porcentagem}%`;
             
+            // Relatório detalhado para o professor
             const listaErrosFinal = document.getElementById('listaErrosFinal');
             listaErrosFinal.innerHTML = '';
             
@@ -586,10 +652,11 @@
             } else {
                 listaDetalhesErros.forEach(erro => {
                     listaErrosFinal.innerHTML += `
-                        <li>
-                            <strong>Nível ${erro.nivel} (${erro.nivelNome})</strong><br>
+                        <li style="margin-bottom: 15px; border-bottom: 1px solid #fee; padding-bottom: 10px;">
+                            <strong>📌 Nível ${erro.nivel} (${erro.nivelNome})</strong><br>
                             Pergunta: ${erro.pergunta}<br>
-                            Sua resposta: ${erro.respostaDada} | Correta: ${erro.respostaCorreta}
+                            ✏️ Resposta do aluno: <span style="color:#e53e3e;">${erro.respostaDada}</span><br>
+                            ✅ Resposta correta: <span style="color:#48bb78;">${erro.respostaCorreta}</span>
                         </li>
                     `;
                 });
@@ -598,6 +665,7 @@
             document.getElementById('telaJogo').classList.add('hidden');
             document.getElementById('telaFinal').classList.remove('hidden');
             
+            // Salva e mostra mensagem de confirmação
             salvarResultado();
         }
 
@@ -608,9 +676,12 @@
         function voltarTelaInicial() {
             if (timerInterval) clearInterval(timerInterval);
             document.getElementById('telaFinal').classList.add('hidden');
+            document.getElementById('telaRecuperacao').classList.add('hidden');
+            document.getElementById('telaJogo').classList.add('hidden');
             document.getElementById('telaInicial').classList.remove('hidden');
         }
 
+        // Ativar áudio após primeiro clique
         document.body.addEventListener('click', () => {
             if (audioCtx && audioCtx.state === 'suspended') {
                 audioCtx.resume();
