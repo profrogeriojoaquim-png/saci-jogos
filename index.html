@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Saci Sabido - Sequência Numérica</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 30px;
+            padding: 30px;
+            max-width: 650px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .hidden {
+            display: none;
+        }
+        .pergunta {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 30px 0;
+            color: #333;
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 20px;
+            font-family: monospace;
+        }
+        .opcoes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .opcao {
+            background: #f0f0f0;
+            padding: 18px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .opcao:hover {
+            background: #e0e0e0;
+            transform: scale(1.02);
+        }
+        .correto {
+            background: #48bb78 !important;
+            color: white;
+            animation: pulse 0.5s;
+        }
+        .errado {
+            background: #f56565 !important;
+            color: white;
+            animation: shake 0.5s;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-weight: bold;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 15px;
+        }
+        .progresso {
+            width: 100%;
+            background: #e0e0e0;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        .progresso-bar {
+            height: 12px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .feedback {
+            margin-top: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .feedback-sucesso {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        .feedback-erro {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .pontuacao {
+            font-size: 18px;
+            color: #48bb78;
+        }
+        .icone-som {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            font-size: 24px;
+        }
+        @media (max-width: 500px) {
+            .container { padding: 20px; }
+            .pergunta { font-size: 24px; padding: 20px; }
+            .opcao { padding: 12px; font-size: 16px; }
+            .info { font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="icone-som" onclick="alternarSom()" id="somIcone">
+        🔊
+    </div>
+
+    <div class="container">
+        <!-- Tela inicial -->
+        <div id="telaInicial">
+            <h1>🧩 Sequência Numérica</h1>
+            <p>Descubra o próximo número da sequência!</p>
+            <p>4 níveis • 24 desafios • sistema de recuperação</p>
+            <button onclick="iniciarJogo()">▶ COMEÇAR MISSÃO</button>
+        </div>
+
+        <!-- Tela do jogo -->
+        <div id="telaJogo" class="hidden">
+            <div class="info">
+                <span id="nivelTexto">Nível 1/4</span>
+                <span class="timer" id="timer">00:00</span>
+                <span class="pontuacao" id="pontuacaoTexto">⭐ 0</span>
+            </div>
+            <div class="progresso">
+                <div class="progresso-bar" id="progressoBar"></div>
+            </div>
+            <div class="pergunta" id="pergunta"></div>
+            <div class="opcoes" id="opcoes"></div>
+            <div class="feedback hidden" id="feedback"></div>
+        </div>
+
+        <!-- Tela final -->
+        <div id="telaFinal" class="hidden">
+            <h1>🏆 Missão Concluída!</h1>
+            <div style="background: #f8f9fa; border-radius: 20px; padding: 20px; margin: 20px 0;">
+                <p style="font-size: 18px; margin: 10px 0;">📊 <strong id="resultadoFinalAcertos"></strong></p>
+                <p style="font-size: 18px; margin: 10px 0;">⏱️ <strong id="resultadoFinalTempo"></strong></p>
+                <p style="font-size: 18px; margin: 10px 0;">🎯 <strong id="resultadoFinalPorcentagem"></strong></p>
+            </div>
+            <button onclick="reiniciar()">🔄 Jogar Novamente</button>
+        </div>
+    </div>
+
+    <script>
+        // ======================== CONEXÃO SUPABASE ========================
+        const SUPABASE_URL = 'https://qmcqffnawtfaenyziwsn.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY3FmZm5hd3RmYWVueXppd3NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNTM5NTMsImV4cCI6MjA4OTcyOTk1M30._CjaNoeJeQp-8s8Jt-dk3bJfktdEV97R5LhLnWgYrNc';
+
+        // ======================== ÁUDIO ========================
+        let somAtivado = true;
+        let audioCtx = null;
+
+        function tocarSom(tipo) {
+            if (!somAtivado) return;
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            const now = audioCtx.currentTime;
+            const gain = audioCtx.createGain();
+            gain.connect(audioCtx.destination);
+            const osc = audioCtx.createOscillator();
+            osc.connect(gain);
+            osc.type = 'sine';
+            
+            if (tipo === 'acerto') {
+                osc.frequency.value = 880;
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (tipo === 'erro') {
+                osc.frequency.value = 220;
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (tipo === 'vitoria') {
+                [523.25, 659.25, 783.99].forEach((freq, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.frequency.value = freq;
+                    g.gain.setValueAtTime(0.15, now + i * 0.1);
+                    g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.1 + 0.8);
+                    o.start(now + i * 0.1);
+                    o.stop(now + i * 0.1 + 0.6);
+                });
+            }
+        }
+
+        function alternarSom() {
+            somAtivado = !somAtivado;
+            document.getElementById('somIcone').innerHTML = somAtivado ? '🔊' : '🔇';
+        }
+
+        // ======================== DADOS DO JOGO ========================
+        const niveis = [
+            { nome: "Nível 1 - Adição", perguntas: [
+                { texto: "2, 4, 6, ?", opcoes: ["7","8","9","10"], correta: "8" },
+                { texto: "5, 10, 15, ?", opcoes: ["18","20","25","30"], correta: "20" },
+                { texto: "10, 20, 30, ?", opcoes: ["35","40","45","50"], correta: "40" },
+                { texto: "1, 3, 5, ?", opcoes: ["6","7","8","9"], correta: "7" },
+                { texto: "0, 4, 8, ?", opcoes: ["10","12","14","16"], correta: "12" },
+                { texto: "11, 22, 33, ?", opcoes: ["40","44","55","34"], correta: "44" }
+            ]},
+            { nome: "Nível 2 - Subtração", perguntas: [
+                { texto: "20, 18, 16, ?", opcoes: ["15","14","13","12"], correta: "14" },
+                { texto: "3, 6, 9, ?", opcoes: ["10","12","14","15"], correta: "12" },
+                { texto: "100, 90, 80, ?", opcoes: ["70","60","50","40"], correta: "70" },
+                { texto: "1, 5, 9, ?", opcoes: ["12","13","14","15"], correta: "13" },
+                { texto: "50, 45, 40, ?", opcoes: ["35","30","25","20"], correta: "35" },
+                { texto: "2, 5, 8, ?", opcoes: ["10","11","12","13"], correta: "11" }
+            ]},
+            { nome: "Nível 3 - Multiplicação", perguntas: [
+                { texto: "1, 2, 4, ?", opcoes: ["6","8","10","12"], correta: "8" },
+                { texto: "10, 100, 1000, ?", opcoes: ["1010","2000","10000","5000"], correta: "10000" },
+                { texto: "3, 6, 12, ?", opcoes: ["18","24","30","36"], correta: "24" },
+                { texto: "5, 25, 125, ?", opcoes: ["150","250","625","500"], correta: "625" },
+                { texto: "2, 6, 18, ?", opcoes: ["24","36","54","72"], correta: "54" },
+                { texto: "1, 4, 16, ?", opcoes: ["32","48","64","100"], correta: "64" }
+            ]},
+            { nome: "Nível 4 - Misto", perguntas: [
+                { texto: "1, 1, 2, 3, ?", opcoes: ["4","5","6","7"], correta: "5" },
+                { texto: "1, 4, 9, ?", opcoes: ["12","15","16","20"], correta: "16" },
+                { texto: "0, 1, 3, 6, ?", opcoes: ["8","9","10","11"], correta: "10" },
+                { texto: "2, 3, 5, 8, ?", opcoes: ["10","12","13","15"], correta: "13" },
+                { texto: "100, 81, 64, ?", opcoes: ["50","49","40","36"], correta: "49" },
+                { texto: "2, 4, 16, ?", opcoes: ["32","64","256","512"], correta: "256" }
+            ]}
+        ];
+
+        let nivelAtual = 0;
+        let perguntaAtual = 0;
+        let acertos = 0;
+        let erros = 0;
+        let listaErros = [];
+        let podeResponder = true;
+        let emRecuperacao = false;
+        let recuperandoErros = [];
+        let tempoTotal = 0;
+        let timerInterval = null;
+
+        function atualizarProgresso() {
+            const total = niveis[nivelAtual].perguntas.length;
+            const porcentagem = ((perguntaAtual) / total) * 100;
+            document.getElementById('progressoBar').style.width = porcentagem + '%';
+        }
+
+        function iniciarJogo() {
+            nivelAtual = 0;
+            perguntaAtual = 0;
+            acertos = 0;
+            erros = 0;
+            listaErros = [];
+            emRecuperacao = false;
+            tempoTotal = 0;
+            
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                tempoTotal++;
+                const min = Math.floor(tempoTotal / 60).toString().padStart(2, '0');
+                const seg = (tempoTotal % 60).toString().padStart(2, '0');
+                document.getElementById('timer').innerHTML = `${min}:${seg}`;
+            }, 1000);
+            
+            document.getElementById('telaInicial').classList.add('hidden');
+            document.getElementById('telaJogo').classList.remove('hidden');
+            document.getElementById('telaFinal').classList.add('hidden');
+            
+            carregarPergunta();
+        }
+
+        function carregarPergunta() {
+            podeResponder = true;
+            document.getElementById('feedback').classList.add('hidden');
+            
+            let pergunta;
+            if (emRecuperacao) {
+                pergunta = recuperandoErros[perguntaAtual];
+                document.getElementById('nivelTexto').innerHTML = `🔄 Revisão - ${niveis[nivelAtual].nome}`;
+            } else {
+                pergunta = niveis[nivelAtual].perguntas[perguntaAtual];
+                document.getElementById('nivelTexto').innerHTML = `${niveis[nivelAtual].nome} (${perguntaAtual+1}/6)`;
+            }
+            
+            document.getElementById('pontuacaoTexto').innerHTML = `⭐ ${acertos}`;
+            document.getElementById('pergunta').innerHTML = pergunta.texto;
+            
+            const containerOpcoes = document.getElementById('opcoes');
+            containerOpcoes.innerHTML = '';
+            
+            pergunta.opcoes.forEach(opcao => {
+                const btn = document.createElement('div');
+                btn.className = 'opcao';
+                btn.innerHTML = opcao;
+                btn.onclick = () => verificarResposta(btn, opcao, pergunta.correta);
+                containerOpcoes.appendChild(btn);
+            });
+            
+            atualizarProgresso();
+        }
+
+        function verificarResposta(botao, resposta, correta) {
+            if (!podeResponder) return;
+            podeResponder = false;
+            
+            if (resposta === correta) {
+                botao.classList.add('correto');
+                tocarSom('acerto');
+                if (!emRecuperacao) acertos++;
+                document.getElementById('pontuacaoTexto').innerHTML = `⭐ ${acertos}`;
+                mostrarFeedback('✅ Correto!', 'sucesso');
+                
+                setTimeout(() => {
+                    proximaPergunta();
+                }, 600);
+            } else {
+                botao.classList.add('errado');
+                tocarSom('erro');
+                if (!emRecuperacao) {
+                    erros++;
+                    listaErros.push(niveis[nivelAtual].perguntas[perguntaAtual]);
+                }
+                mostrarFeedback(`❌ Errado! Resposta correta: ${correta}`, 'erro');
+                
+                setTimeout(() => {
+                    proximaPergunta();
+                }, 800);
+            }
+        }
+
+        function mostrarFeedback(mensagem, tipo) {
+            const feedbackDiv = document.getElementById('feedback');
+            feedbackDiv.innerHTML = mensagem;
+            feedbackDiv.className = `feedback ${tipo === 'sucesso' ? 'feedback-sucesso' : 'feedback-erro'}`;
+            feedbackDiv.classList.remove('hidden');
+        }
+
+        function proximaPergunta() {
+            if (emRecuperacao) {
+                perguntaAtual++;
+                if (perguntaAtual >= recuperandoErros.length) {
+                    emRecuperacao = false;
+                    nivelAtual++;
+                    perguntaAtual = 0;
+                    
+                    if (nivelAtual >= niveis.length) {
+                        finalizarJogo();
+                    } else {
+                        carregarPergunta();
+                    }
+                } else {
+                    carregarPergunta();
+                }
+            } else {
+                perguntaAtual++;
+                if (perguntaAtual >= niveis[nivelAtual].perguntas.length) {
+                    if (listaErros.length > 0) {
+                        recuperandoErros = [...listaErros];
+                        listaErros = [];
+                        emRecuperacao = true;
+                        perguntaAtual = 0;
+                        mostrarFeedback(`⚠️ Você errou ${recuperandoErros.length} questão(ões). Vamos revisar!`, 'erro');
+                        setTimeout(() => {
+                            carregarPergunta();
+                        }, 1500);
+                    } else {
+                        nivelAtual++;
+                        perguntaAtual = 0;
+                        
+                        if (nivelAtual >= niveis.length) {
+                            finalizarJogo();
+                        } else {
+                            carregarPergunta();
+                        }
+                    }
+                } else {
+                    carregarPergunta();
+                }
+            }
+        }
+
+        async function salvarResultado() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const alunoId = urlParams.get('aluno_id');
+            const jogoId = urlParams.get('jogo_id');
+            const turmaId = urlParams.get('turma_id');
+            
+            if (!alunoId || !jogoId) {
+                console.log("⚠️ Modo teste - sem parâmetros. Resultado não salvo.");
+                return;
+            }
+            
+            const dados = {
+                aluno_id: alunoId,
+                jogo_id: jogoId,
+                turma_id: turmaId || null,
+                acertos: acertos,
+                erros: 24 - acertos,
+                habilidade_bncc: 'EF07MA14',
+                tempo_segundos: tempoTotal,
+                total_questoes: 24
+            };
+            
+            console.log("📤 Enviando para o banco:", dados);
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/resultados`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(dados)
+                });
+                
+                if (response.ok) {
+                    console.log("✅ Resultado salvo com sucesso!");
+                } else {
+                    const erro = await response.text();
+                    console.error("❌ Erro ao salvar:", erro);
+                }
+            } catch (erro) {
+                console.error("❌ Erro de conexão:", erro);
+            }
+        }
+
+        function finalizarJogo() {
+            if (timerInterval) clearInterval(timerInterval);
+            tocarSom('vitoria');
+            
+            const tempoMin = Math.floor(tempoTotal / 60);
+            const tempoSeg = tempoTotal % 60;
+            const porcentagem = Math.round((acertos / 24) * 100);
+            
+            document.getElementById('resultadoFinalAcertos').innerHTML = `${acertos} de 24 acertos`;
+            document.getElementById('resultadoFinalTempo').innerHTML = `${tempoMin}min ${tempoSeg}s`;
+            document.getElementById('resultadoFinalPorcentagem').innerHTML = `${porcentagem}% de aproveitamento`;
+            
+            document.getElementById('telaJogo').classList.add('hidden');
+            document.getElementById('telaFinal').classList.remove('hidden');
+            
+            salvarResultado();
+        }
+
+        function reiniciar() {
+            iniciarJogo();
+        }
+
+        document.body.addEventListener('click', () => {
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }, { once: true });
+    </script>
+</body>
+</html>
