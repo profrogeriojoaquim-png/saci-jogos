@@ -176,11 +176,6 @@
             padding: 15px;
             margin-bottom: 20px;
         }
-        .escola-info {
-            font-size: 14px;
-            color: #4a5568;
-            margin-top: 5px;
-        }
         .revisao-item {
             background: #fff5f5;
             border-radius: 15px;
@@ -213,16 +208,16 @@
                 <p id="statusConexao"></p>
             </div>
             <p>Descubra a lógica por trás de cada sequência!</p>
-            <p>4 níveis • 24 desafios • aprenda com seus erros</p>
+            <p>4 módulos • 24 questões • sistema de revisão de aprendizagem</p>
             <div class="botoes-container">
-                <button id="btnIniciar" onclick="iniciarJogo()" disabled>▶ COMEÇAR</button>
-                <button onclick="voltarParaAtividades()" class="btn-voltar">← VOLTAR</button>
+                <button id="btnIniciar" onclick="iniciarJogo()" disabled>▶ INICIAR INSTRUMENTO</button>
+                <button onclick="voltarParaAtividades()" class="btn-voltar">← VOLTAR AO SISTEMA</button>
             </div>
         </div>
 
         <div id="telaJogo" class="hidden">
             <div class="info">
-                <span class="info-item" id="nivelTexto">Nível 1</span>
+                <span class="info-item" id="nivelTexto">Módulo 1</span>
                 <span class="info-item timer" id="timer">00:00</span>
                 <span class="info-item" id="pontuacaoTexto">⭐ Acertos: 0</span>
                 <span class="info-item" id="errosTexto">❌ Erros: 0</span>
@@ -232,22 +227,22 @@
             <div class="opcoes" id="opcoes"></div>
             <div class="feedback hidden" id="feedback"></div>
             <div class="botoes-container">
-                <button onclick="sairJogo()" class="btn-secundario" style="background: #e53e3e;">🚪 SAIR</button>
+                <button onclick="sairJogo()" class="btn-secundario" style="background: #e53e3e;">🚪 ENCERRAR SESSÃO</button>
             </div>
         </div>
 
         <div id="telaRevisao" class="hidden">
-            <h1>📚 APRENDENDO COM OS ERROS</h1>
+            <h1>📚 REVISÃO DE APRENDIZAGEM</h1>
             <p id="msgRevisao"></p>
             <div id="revisaoContainer" class="relatorio-erros"></div>
             <div class="botoes-container">
-                <button id="btnProximoRevisao" onclick="proximoItemRevisao()" disabled>▶ PRÓXIMA</button>
-                <button onclick="sairJogo()" class="btn-secundario" style="background: #e53e3e;">🚪 SAIR</button>
+                <button id="btnProximoRevisao" onclick="proximoItemRevisao()" disabled>▶ PRÓXIMO</button>
+                <button onclick="sairJogo()" class="btn-secundario" style="background: #e53e3e;">🚪 ENCERRAR SESSÃO</button>
             </div>
         </div>
 
         <div id="telaFinal" class="hidden">
-            <h1>🏆 Missão Concluída!</h1>
+            <h1>📊 Análise de Proficiência Concluída!</h1>
             <div class="estatisticas">
                 <div class="estatistica-card"><h3>📊</h3><p><strong id="resultadoFinalAcertos"></strong></p><p>Acertos</p></div>
                 <div class="estatistica-card"><h3>⏱️</h3><p><strong id="resultadoFinalTempo"></strong></p><p>Tempo Total</p></div>
@@ -255,20 +250,19 @@
                 <div class="estatistica-card"><h3>🎯</h3><p><strong id="resultadoFinalPorcentagem"></strong></p><p>Aproveitamento</p></div>
             </div>
             <div id="rankingContainer" class="ranking-container hidden">
-                <div class="ranking-texto">🏆 Sua melhor posição na sala</div>
+                <div class="ranking-texto">🏆 Posição na turma (melhor desempenho)</div>
                 <div class="ranking-destaque" id="rankingPosicao">--</div>
-                <div class="ranking-texto" id="rankingTotal">entre -- alunos</div>
-                <div style="font-size: 12px; margin-top: 5px;">Baseado no seu melhor desempenho</div>
+                <div class="ranking-texto" id="rankingTotal">entre -- estudantes</div>
             </div>
             <div id="msgSalvoContainer"></div>
             <div class="relatorio-erros" id="relatorioErrosFinal">
-                <h4>📝 Registro de aprendizagem (para o professor):</h4>
+                <h4>📝 Questões que merecem intervenção pedagógica:</h4>
                 <ul id="listaErrosFinal"></ul>
             </div>
             <div class="botoes-container">
-                <button onclick="reiniciar()">🔄 Jogar Novamente</button>
-                <button onclick="voltarTelaInicial()" class="btn-secundario">🏠 Menu</button>
-                <button onclick="voltarParaAtividades()" class="btn-voltar">← VOLTAR</button>
+                <button onclick="reiniciar()">🔄 Refazer Atividade</button>
+                <button onclick="voltarTelaInicial()" class="btn-secundario">🏠 Menu Principal</button>
+                <button onclick="voltarParaAtividades()" class="btn-voltar">← VOLTAR AO SISTEMA</button>
             </div>
         </div>
     </div>
@@ -319,7 +313,7 @@
         function voltarParaAtividades() {
             window.close();
             if (document.referrer) window.location.href = document.referrer;
-            else alert("Feche esta aba para voltar.");
+            else alert("Feche esta aba para voltar ao sistema.");
         }
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -327,21 +321,18 @@
         const JOGO_ID = urlParams.get('jogo_id');
         const TURMA_ID = urlParams.get('turma_id');
         const HABILIDADE_BNCC = urlParams.get('bncc') || 'EF07MA14';
-        let nomeAluno = "Aluno";
+        let nomeAluno = "Estudante";
         let nomeEscola = "";
         let codigoTurma = "";
 
         const btnIniciar = document.getElementById('btnIniciar');
         const infoDiv = document.getElementById('infoEscolaTurma');
 
-        // Buscar informações da escola e turma
         async function carregarDadosPersonalizados() {
             if (!ALUNO_ID || !TURMA_ID) return;
             try {
-                // Buscar dados do aluno
                 const { data: alunoData } = await supabase.from('alunos').select('nome_aluno, turma_id').eq('id', ALUNO_ID).maybeSingle();
                 if (alunoData?.nome_aluno) nomeAluno = alunoData.nome_aluno;
-                // Buscar dados da turma e escola
                 const { data: turmaData } = await supabase.from('turmas').select('codigo, escola_id').eq('id', TURMA_ID).maybeSingle();
                 if (turmaData) {
                     codigoTurma = turmaData.codigo || "Turma";
@@ -353,17 +344,16 @@
                 if (codigoTurma) textoInfo += ` • 🧑‍🏫 Turma: ${codigoTurma}`;
                 if (nomeAluno) textoInfo += ` • 👤 ${nomeAluno}`;
                 if (textoInfo) infoDiv.innerHTML = textoInfo;
-                document.getElementById('mensagemBoasVindas').innerHTML = `🧩 Olá, ${nomeAluno}! Vamos aprender?`;
+                document.getElementById('mensagemBoasVindas').innerHTML = `🧩 Olá, ${nomeAluno}! Vamos desenvolver sua proficiência?`;
                 btnIniciar.disabled = false;
             } catch(e) {
-                console.log("Erro ao carregar dados personalizados", e);
+                console.log(e);
                 btnIniciar.disabled = false;
             }
         }
 
-        // Base de perguntas (24 questões)
         const niveis = [
-            { // Nível 1
+            { // Módulo 1
                 perguntas: [
                     { texto: "2, 4, 6, ?", opcoes: ["7","8","9","10"], correta: "8", dica1: "Observe a diferença entre os números", dica2: "A diferença é sempre a mesma", dica3: "Está aumentando de 2 em 2", explicacao: "Os números aumentam de 2 em 2: 2+2=4, 4+2=6, então 6+2=8" },
                     { texto: "5, 10, 15, ?", opcoes: ["18","20","25","30"], correta: "20", dica1: "Qual a relação entre 5 e 10?", dica2: "Está somando sempre o mesmo número", dica3: "5+5=10, 10+5=15, então 15+5=20", explicacao: "Some 5 a cada termo" },
@@ -373,7 +363,7 @@
                     { texto: "11, 22, 33, ?", opcoes: ["40","44","55","34"], correta: "44", dica1: "Múltiplos de 11", dica2: "Some 11", dica3: "11+11=22, 22+11=33, então 33+11=44", explicacao: "Some 11 a cada termo" }
                 ]
             },
-            { // Nível 2
+            { // Módulo 2
                 perguntas: [
                     { texto: "20, 18, 16, ?", opcoes: ["15","14","13","12"], correta: "14", dica1: "Os números estão diminuindo", dica2: "Diminui de 2 em 2", dica3: "20-2=18, 18-2=16, então 16-2=14", explicacao: "Subtraia 2 a cada termo" },
                     { texto: "3, 6, 9, ?", opcoes: ["10","12","14","15"], correta: "12", dica1: "Múltiplos de 3", dica2: "Some 3", dica3: "3+3=6, 6+3=9, então 9+3=12", explicacao: "Some 3 a cada termo" },
@@ -383,7 +373,7 @@
                     { texto: "2, 5, 8, ?", opcoes: ["10","11","12","13"], correta: "11", dica1: "Diferença entre 2 e 5?", dica2: "Some 3", dica3: "2+3=5, 5+3=8, então 8+3=11", explicacao: "Some 3 a cada termo" }
                 ]
             },
-            { // Nível 3
+            { // Módulo 3
                 perguntas: [
                     { texto: "1, 2, 4, ?", opcoes: ["6","8","10","12"], correta: "8", dica1: "O que acontece entre 1 e 2?", dica2: "Multiplica por 2", dica3: "1×2=2, 2×2=4, então 4×2=8", explicacao: "Dobre o valor" },
                     { texto: "10, 100, 1000, ?", opcoes: ["1010","2000","10000","5000"], correta: "10000", dica1: "Observe os zeros", dica2: "Multiplica por 10", dica3: "10×10=100, 100×10=1000, então 1000×10=10000", explicacao: "Multiplique por 10" },
@@ -393,7 +383,7 @@
                     { texto: "1, 4, 16, ?", opcoes: ["32","48","64","100"], correta: "64", dica1: "1, 4, 16...", dica2: "Multiplica por 4", dica3: "1×4=4, 4×4=16, então 16×4=64", explicacao: "Multiplique por 4" }
                 ]
             },
-            { // Nível 4
+            { // Módulo 4
                 perguntas: [
                     { texto: "1, 1, 2, 3, ?", opcoes: ["4","5","6","7"], correta: "5", dica1: "Cada número depende dos anteriores", dica2: "Some os dois últimos", dica3: "1+1=2, 1+2=3, então 2+3=5", explicacao: "Sequência de Fibonacci" },
                     { texto: "1, 4, 9, ?", opcoes: ["12","15","16","20"], correta: "16", dica1: "1, 4, 9... são?", dica2: "Quadrados perfeitos", dica3: "1²=1, 2²=4, 3²=9, então 4²=16", explicacao: "Quadrado dos números naturais" },
@@ -443,7 +433,7 @@
             podeResponder = true;
             document.getElementById('feedback').classList.add('hidden');
             let pergunta = niveis[nivelAtual].perguntas[perguntaAtual];
-            document.getElementById('nivelTexto').innerHTML = `Nível ${nivelAtual+1}`;
+            document.getElementById('nivelTexto').innerHTML = `Módulo ${nivelAtual+1}`;
             document.getElementById('pergunta').innerHTML = pergunta.texto;
             let opcoes = [...pergunta.opcoes];
             for (let i = opcoes.length - 1; i > 0; i--) {
@@ -515,7 +505,7 @@
         function mostrarModalProximoNivel() {
             let modal = document.createElement('div');
             modal.className = 'modal';
-            modal.innerHTML = `<div class="modal-content"><h2>🎉 Parabéns, ${nomeAluno}!</h2><p>Você concluiu o Nível ${nivelAtual} sem erros! Avançando...</p><button onclick="this.closest('.modal').remove()">▶ CONTINUAR</button></div>`;
+            modal.innerHTML = `<div class="modal-content"><h2>🎉 Parabéns, ${nomeAluno}!</h2><p>Você concluiu o Módulo ${nivelAtual} sem erros! Avançando...</p><button onclick="this.closest('.modal').remove()">▶ CONTINUAR</button></div>`;
             document.body.appendChild(modal);
             return new Promise(resolve => {
                 modal.querySelector('button').onclick = () => { modal.remove(); resolve(); };
@@ -537,7 +527,7 @@
             let container = document.getElementById('revisaoContainer');
             let btnProximo = document.getElementById('btnProximoRevisao');
             btnProximo.disabled = true;
-            btnProximo.textContent = "▶ PRÓXIMA";
+            btnProximo.textContent = "▶ PRÓXIMO";
             container.innerHTML = `
                 <div class="revisao-item">
                     <div><strong>Questão ${revisaoIndex+1} de ${itensRevisao.length}</strong></div>
@@ -595,7 +585,7 @@
             if (dicasUsadasRevisao >= 3) { mostrarFeedbackRevisao("Você já usou todas as dicas!", "info"); return; }
             dicasUsadasRevisao++;
             let dica = dicasUsadasRevisao === 1 ? erro.dica1 : (dicasUsadasRevisao === 2 ? erro.dica2 : erro.dica3);
-            mostrarFeedbackRevisao(`💡 DICA NÍVEL ${dicasUsadasRevisao}: ${dica}`, "info");
+            mostrarFeedbackRevisao(`💡 DICA ${dicasUsadasRevisao}: ${dica}`, "info");
             if (acertos > 0) acertos--;
             atualizarUI();
             let btn = document.getElementById('btnDicaRevisao');
@@ -673,16 +663,16 @@
                     body: JSON.stringify(dados)
                 });
                 if (resp.ok) {
-                    mostrarFeedbackSalvo("✅ Dados enviados ao professor!", "sucesso");
+                    mostrarFeedbackSalvo("✅ Dados registrados com sucesso!", "sucesso");
                     if (TURMA_ID) {
                         let ranking = await buscarMelhorRanking(ALUNO_ID, TURMA_ID, acertos, tempoTotal);
                         if (ranking) {
                             document.getElementById('rankingPosicao').innerHTML = `${ranking.posicao}º`;
-                            document.getElementById('rankingTotal').innerHTML = `entre ${ranking.total} alunos`;
+                            document.getElementById('rankingTotal').innerHTML = `entre ${ranking.total} estudantes`;
                             document.getElementById('rankingContainer').classList.remove('hidden');
                         }
                     }
-                } else mostrarFeedbackSalvo("❌ Erro ao salvar.", "erro");
+                } else mostrarFeedbackSalvo("❌ Erro ao registrar.", "erro");
             } catch(e) { console.error(e); }
         }
         function mostrarFeedbackSalvo(msg, tipo) {
@@ -700,9 +690,9 @@
             document.getElementById('resultadoFinalPorcentagem').innerHTML = `${perc}%`;
             let listaFinal = document.getElementById('listaErrosFinal');
             listaFinal.innerHTML = '';
-            if (detalhesErros.length === 0) listaFinal.innerHTML = '<li style="color: #48bb78;">🎉 Nenhum erro! Parabéns!</li>';
+            if (detalhesErros.length === 0) listaFinal.innerHTML = '<li style="color: #48bb78;">🎉 Nenhum erro! Desempenho excelente!</li>';
             else detalhesErros.forEach(e => {
-                listaFinal.innerHTML += `<li><strong>Nível ${e.nivel}</strong> - ${e.pergunta}<br>Resposta do aluno: ${e.respostaDada} | Correta: ${e.respostaCorreta}<br>Explicação: ${e.explicacao}</li>`;
+                listaFinal.innerHTML += `<li><strong>Módulo ${e.nivel}</strong> - ${e.pergunta}<br>Resposta do estudante: ${e.respostaDada} | Correta: ${e.respostaCorreta}<br>Explicação: ${e.explicacao}</li>`;
             });
             document.getElementById('telaJogo').classList.add('hidden');
             document.getElementById('telaRevisao').classList.add('hidden');
