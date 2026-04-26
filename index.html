@@ -120,22 +120,6 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             font-size: 24px;
         }
-        .dica-container {
-            background: #fffbeb;
-            border-left: 5px solid #f59e0b;
-            padding: 15px;
-            margin: 15px 0;
-            text-align: left;
-            border-radius: 10px;
-        }
-        .tentativas-container {
-            background: #f3f4f6;
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 10px;
-            font-size: 14px;
-            color: #4b5563;
-        }
         .relatorio-erros {
             background: #fff5f5;
             border: 1px solid #feb2b2;
@@ -217,7 +201,6 @@
 <body>
     <div class="icone-som" onclick="alternarSom()" id="somIcone">🔊</div>
     <div class="container">
-        <!-- Tela inicial -->
         <div id="telaInicial">
             <div id="boasVindas" class="boas-vindas">
                 <h2 id="mensagemBoasVindas">🧩 Sequência Numérica</h2>
@@ -231,7 +214,6 @@
             </div>
         </div>
 
-        <!-- Tela do jogo (primeira tentativa) -->
         <div id="telaJogo" class="hidden">
             <div class="info">
                 <span class="info-item" id="nivelTexto">Nível 1</span>
@@ -242,14 +224,12 @@
             <div class="progresso"><div class="progresso-bar" id="progressoBar"></div></div>
             <div class="pergunta" id="pergunta"></div>
             <div class="opcoes" id="opcoes"></div>
-            <!-- Sem dicas na primeira tentativa -->
             <div class="feedback hidden" id="feedback"></div>
             <div class="botoes-container">
                 <button onclick="sairJogo()" class="btn-secundario" style="background: #e53e3e;">🚪 SAIR</button>
             </div>
         </div>
 
-        <!-- Tela de revisão (com dicas progressivas) -->
         <div id="telaRevisao" class="hidden">
             <h1>📚 APRENDENDO COM OS ERROS</h1>
             <p id="msgRevisao"></p>
@@ -260,7 +240,6 @@
             </div>
         </div>
 
-        <!-- Tela final -->
         <div id="telaFinal" class="hidden">
             <h1>🏆 Missão Concluída!</h1>
             <div class="estatisticas">
@@ -270,9 +249,10 @@
                 <div class="estatistica-card"><h3>🎯</h3><p><strong id="resultadoFinalPorcentagem"></strong></p><p>Aproveitamento</p></div>
             </div>
             <div id="rankingContainer" class="ranking-container hidden">
-                <div class="ranking-texto">🏆 Sua posição na sala</div>
+                <div class="ranking-texto">🏆 Sua melhor posição na sala</div>
                 <div class="ranking-destaque" id="rankingPosicao">--</div>
                 <div class="ranking-texto" id="rankingTotal">entre -- alunos</div>
+                <div style="font-size: 12px; margin-top: 5px;">Baseado no seu melhor desempenho</div>
             </div>
             <div id="msgSalvoContainer"></div>
             <div class="relatorio-erros" id="relatorioErrosFinal">
@@ -336,7 +316,6 @@
             else alert("Feche esta aba para voltar.");
         }
 
-        // Parâmetros
         const urlParams = new URLSearchParams(window.location.search);
         const ALUNO_ID = urlParams.get('aluno_id');
         const JOGO_ID = urlParams.get('jogo_id');
@@ -344,7 +323,6 @@
         const HABILIDADE_BNCC = urlParams.get('bncc') || 'EF07MA14';
         let nomeAluno = "Aluno";
 
-        // Elementos
         const btnIniciar = document.getElementById('btnIniciar');
 
         async function validarAcesso() {
@@ -365,31 +343,31 @@
             }
         }
 
-        // BASE DE DADOS - 24 perguntas, sem títulos de operação
+        // Base de perguntas (24 questões, 6 por nível)
         const niveis = [
             { // Nível 1
                 perguntas: [
                     { texto: "2, 4, 6, ?", opcoes: ["7","8","9","10"], correta: "8", dica1: "Observe a diferença entre os números", dica2: "A diferença é sempre a mesma", dica3: "Está aumentando de 2 em 2", explicacao: "Os números aumentam de 2 em 2: 2+2=4, 4+2=6, então 6+2=8" },
                     { texto: "5, 10, 15, ?", opcoes: ["18","20","25","30"], correta: "20", dica1: "Qual a relação entre 5 e 10?", dica2: "Está somando sempre o mesmo número", dica3: "5+5=10, 10+5=15, então 15+5=20", explicacao: "Some 5 a cada termo" },
-                    { texto: "10, 20, 30, ?", opcoes: ["35","40","45","50"], correta: "40", dica1: "São múltiplos de 10", dica2: "Aumenta de 10 em 10", dica3: "10+10=20, 20+10=30, então 30+10=40", explicacao: "Some 10" },
+                    { texto: "10, 20, 30, ?", opcoes: ["35","40","45","50"], correta: "40", dica1: "São múltiplos de 10", dica2: "Aumenta de 10 em 10", dica3: "10+10=20, 20+10=30, então 30+10=40", explicacao: "Some 10 a cada termo" },
                     { texto: "1, 3, 5, ?", opcoes: ["6","7","8","9"], correta: "7", dica1: "São números ímpares", dica2: "Pule um número entre eles", dica3: "1+2=3, 3+2=5, então 5+2=7", explicacao: "Números ímpares consecutivos" },
-                    { texto: "0, 4, 8, ?", opcoes: ["10","12","14","16"], correta: "12", dica1: "Diferença entre 0 e 4?", dica2: "Some 4", dica3: "0+4=4, 4+4=8, então 8+4=12", explicacao: "Some 4" },
-                    { texto: "11, 22, 33, ?", opcoes: ["40","44","55","34"], correta: "44", dica1: "Múltiplos de 11", dica2: "Some 11", dica3: "11+11=22, 22+11=33, então 33+11=44", explicacao: "Some 11" }
+                    { texto: "0, 4, 8, ?", opcoes: ["10","12","14","16"], correta: "12", dica1: "Diferença entre 0 e 4?", dica2: "Some 4", dica3: "0+4=4, 4+4=8, então 8+4=12", explicacao: "Some 4 a cada termo" },
+                    { texto: "11, 22, 33, ?", opcoes: ["40","44","55","34"], correta: "44", dica1: "Múltiplos de 11", dica2: "Some 11", dica3: "11+11=22, 22+11=33, então 33+11=44", explicacao: "Some 11 a cada termo" }
                 ]
             },
             { // Nível 2
                 perguntas: [
-                    { texto: "20, 18, 16, ?", opcoes: ["15","14","13","12"], correta: "14", dica1: "Os números estão diminuindo", dica2: "Diminui de 2 em 2", dica3: "20-2=18, 18-2=16, então 16-2=14", explicacao: "Subtraia 2" },
-                    { texto: "3, 6, 9, ?", opcoes: ["10","12","14","15"], correta: "12", dica1: "Múltiplos de 3", dica2: "Some 3", dica3: "3+3=6, 6+3=9, então 9+3=12", explicacao: "Some 3" },
-                    { texto: "100, 90, 80, ?", opcoes: ["70","60","50","40"], correta: "70", dica1: "Diminuindo", dica2: "Subtraia 10", dica3: "100-10=90, 90-10=80, então 80-10=70", explicacao: "Subtraia 10" },
-                    { texto: "1, 5, 9, ?", opcoes: ["12","13","14","15"], correta: "13", dica1: "Diferença entre 1 e 5?", dica2: "Some 4", dica3: "1+4=5, 5+4=9, então 9+4=13", explicacao: "Some 4" },
-                    { texto: "50, 45, 40, ?", opcoes: ["35","30","25","20"], correta: "35", dica1: "Diminui sempre do mesmo valor", dica2: "Subtraia 5", dica3: "50-5=45, 45-5=40, então 40-5=35", explicacao: "Subtraia 5" },
-                    { texto: "2, 5, 8, ?", opcoes: ["10","11","12","13"], correta: "11", dica1: "Diferença entre 2 e 5?", dica2: "Some 3", dica3: "2+3=5, 5+3=8, então 8+3=11", explicacao: "Some 3" }
+                    { texto: "20, 18, 16, ?", opcoes: ["15","14","13","12"], correta: "14", dica1: "Os números estão diminuindo", dica2: "Diminui de 2 em 2", dica3: "20-2=18, 18-2=16, então 16-2=14", explicacao: "Subtraia 2 a cada termo" },
+                    { texto: "3, 6, 9, ?", opcoes: ["10","12","14","15"], correta: "12", dica1: "Múltiplos de 3", dica2: "Some 3", dica3: "3+3=6, 6+3=9, então 9+3=12", explicacao: "Some 3 a cada termo" },
+                    { texto: "100, 90, 80, ?", opcoes: ["70","60","50","40"], correta: "70", dica1: "Diminuindo", dica2: "Subtraia 10", dica3: "100-10=90, 90-10=80, então 80-10=70", explicacao: "Subtraia 10 a cada termo" },
+                    { texto: "1, 5, 9, ?", opcoes: ["12","13","14","15"], correta: "13", dica1: "Diferença entre 1 e 5?", dica2: "Some 4", dica3: "1+4=5, 5+4=9, então 9+4=13", explicacao: "Some 4 a cada termo" },
+                    { texto: "50, 45, 40, ?", opcoes: ["35","30","25","20"], correta: "35", dica1: "Diminui sempre do mesmo valor", dica2: "Subtraia 5", dica3: "50-5=45, 45-5=40, então 40-5=35", explicacao: "Subtraia 5 a cada termo" },
+                    { texto: "2, 5, 8, ?", opcoes: ["10","11","12","13"], correta: "11", dica1: "Diferença entre 2 e 5?", dica2: "Some 3", dica3: "2+3=5, 5+3=8, então 8+3=11", explicacao: "Some 3 a cada termo" }
                 ]
             },
             { // Nível 3
                 perguntas: [
-                    { texto: "1, 2, 4, ?", opcoes: ["6","8","10","12"], correta: "8", dica1: "O que acontece entre 1 e 2?", dica2: "Multiplica por 2", dica3: "1×2=2, 2×2=4, então 4×2=8", explicacao: "Dobre o valor" },
+                    { texto: "1, 2, 4, ?", opcoes: ["6","8","10","12"], correta: "8", dica1: "O que acontece entre 1 e 2?", dica2: "Multiplica por 2", dica3: "1×2=2, 2×2=4, então 4×2=8", explicacao: "Dobre o valor (multiplique por 2)" },
                     { texto: "10, 100, 1000, ?", opcoes: ["1010","2000","10000","5000"], correta: "10000", dica1: "Observe os zeros", dica2: "Multiplica por 10", dica3: "10×10=100, 100×10=1000, então 1000×10=10000", explicacao: "Multiplique por 10" },
                     { texto: "3, 6, 12, ?", opcoes: ["18","24","30","36"], correta: "24", dica1: "Relação entre 3 e 6?", dica2: "Dobra", dica3: "3×2=6, 6×2=12, então 12×2=24", explicacao: "Multiplique por 2" },
                     { texto: "5, 25, 125, ?", opcoes: ["150","250","625","500"], correta: "625", dica1: "5, 25, 125...", dica2: "Multiplica por 5", dica3: "5×5=25, 25×5=125, então 125×5=625", explicacao: "Multiplique por 5" },
@@ -401,25 +379,23 @@
                 perguntas: [
                     { texto: "1, 1, 2, 3, ?", opcoes: ["4","5","6","7"], correta: "5", dica1: "Cada número depende dos anteriores", dica2: "Some os dois últimos", dica3: "1+1=2, 1+2=3, então 2+3=5", explicacao: "Sequência de Fibonacci: soma dos dois termos anteriores" },
                     { texto: "1, 4, 9, ?", opcoes: ["12","15","16","20"], correta: "16", dica1: "1, 4, 9... são?", dica2: "Quadrados perfeitos", dica3: "1²=1, 2²=4, 3²=9, então 4²=16", explicacao: "Quadrado dos números naturais" },
-                    { texto: "0, 1, 3, 6, ?", opcoes: ["8","9","10","11"], correta: "10", dica1: "Diferenças: 1,2,3...", dica2: "Some +1, +2, +3, +4", dica3: "0+1=1, 1+2=3, 3+3=6, então 6+4=10", explicacao: "Adiciona +1, +2, +3, +4" },
-                    { texto: "2, 3, 5, 8, ?", opcoes: ["10","12","13","15"], correta: "13", dica1: "Cada número depende dos anteriores", dica2: "Soma dos dois anteriores", dica3: "2+3=5, 3+5=8, então 5+8=13", explicacao: "Fibonacci-like" },
-                    { texto: "100, 81, 64, ?", opcoes: ["50","49","40","36"], correta: "49", dica1: "100, 81, 64...", dica2: "Quadrados perfeitos decrescentes", dica3: "10²=100, 9²=81, 8²=64, então 7²=49", explicacao: "Quadrados decrescentes" },
+                    { texto: "0, 1, 3, 6, ?", opcoes: ["8","9","10","11"], correta: "10", dica1: "Diferenças: 1,2,3...", dica2: "Some +1, +2, +3, +4", dica3: "0+1=1, 1+2=3, 3+3=6, então 6+4=10", explicacao: "Adicione +1, +2, +3, +4 a cada termo" },
+                    { texto: "2, 3, 5, 8, ?", opcoes: ["10","12","13","15"], correta: "13", dica1: "Cada número depende dos anteriores", dica2: "Soma dos dois anteriores", dica3: "2+3=5, 3+5=8, então 5+8=13", explicacao: "Sequência de Fibonacci-like" },
+                    { texto: "100, 81, 64, ?", opcoes: ["50","49","40","36"], correta: "49", dica1: "100, 81, 64...", dica2: "Quadrados perfeitos decrescentes", dica3: "10²=100, 9²=81, 8²=64, então 7²=49", explicacao: "Quadrados perfeitos decrescentes (10², 9², 8², 7²)" },
                     { texto: "2, 4, 16, ?", opcoes: ["32","64","256","512"], correta: "256", dica1: "Relação 2 e 4?", dica2: "Eleva ao quadrado", dica3: "2²=4, 4²=16, então 16²=256", explicacao: "Cada termo é o quadrado do anterior" }
                 ]
             }
         ];
 
-        // Estado do jogo
         let nivelAtual = 0, perguntaAtual = 0, acertos = 0, erros = 0;
-        let listaErros = [];             // perguntas erradas (objeto)
-        let detalhesErros = [];          // detalhes para relatório
+        let listaErros = [];
+        let detalhesErros = [];
         let tempoTotal = 0, timerInterval = null;
         let podeResponder = true;
-        let revisaoAtiva = false;
         let itensRevisao = [];
         let revisaoIndex = 0;
         let dicasUsadasRevisao = 0;
-        let tentativasPorQuestao = {};    // guarda tentativas por pergunta
+        let tentativasPorQuestao = {};
 
         function atualizarProgresso() {
             const total = niveis[nivelAtual].perguntas.length;
@@ -459,7 +435,6 @@
             const pergunta = niveis[nivelAtual].perguntas[perguntaAtual];
             document.getElementById('nivelTexto').innerHTML = `Nível ${nivelAtual+1}`;
             document.getElementById('pergunta').innerHTML = pergunta.texto;
-            // Embaralhar opções
             let opcoes = [...pergunta.opcoes];
             for (let i = opcoes.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -481,7 +456,6 @@
             if (!podeResponder) return;
             podeResponder = false;
             const correta = pergunta.correta;
-            // Registra tentativa
             const key = `${nivelAtual}-${perguntaAtual}`;
             if (!tentativasPorQuestao[key]) tentativasPorQuestao[key] = 0;
             tentativasPorQuestao[key]++;
@@ -498,9 +472,7 @@
                 tocarSom('erro');
                 erros++;
                 atualizarUI();
-                // NÃO mostra resposta correta ainda. Apenas informa erro.
                 mostrarFeedback("❌ Errado! Não desanime, você terá a chance de revisar.", "info");
-                // Guarda erro (sem resposta revelada)
                 listaErros.push(pergunta);
                 detalhesErros.push({
                     nivel: nivelAtual+1,
@@ -525,12 +497,9 @@
         function proximaPergunta() {
             perguntaAtual++;
             if (perguntaAtual >= niveis[nivelAtual].perguntas.length) {
-                // Fim do nível
                 if (listaErros.length > 0) {
-                    // Vai para revisão obrigatória
                     iniciarRevisao();
                 } else {
-                    // Sem erros, avança nível
                     nivelAtual++;
                     perguntaAtual = 0;
                     if (nivelAtual >= niveis.length) finalizarJogo();
@@ -547,7 +516,7 @@
         function mostrarModalProximoNivel() {
             const modal = document.createElement('div');
             modal.className = 'modal';
-            modal.innerHTML = `<div class="modal-content"><h2>🎉 Parabéns!</h2><p>Você concluiu o Nível ${nivelAtual} sem erros! Avançando...</p><button onclick="this.closest('.modal').remove()">▶ CONTINUAR</button></div>`;
+            modal.innerHTML = `<div class="modal-content"><h2>🎉 Parabéns, ${nomeAluno}!</h2><p>Você concluiu o Nível ${nivelAtual} sem erros! Avançando...</p><button onclick="this.closest('.modal').remove()">▶ CONTINUAR</button></div>`;
             document.body.appendChild(modal);
             return new Promise(resolve => {
                 modal.querySelector('button').onclick = () => { modal.remove(); resolve(); };
@@ -576,7 +545,6 @@
             const btnProximo = document.getElementById('btnProximoRevisao');
             btnProximo.disabled = true;
             btnProximo.textContent = "▶ PRÓXIMA";
-            // Monta a área de revisão
             container.innerHTML = `
                 <div class="revisao-item">
                     <div><strong>Questão ${revisaoIndex+1} de ${itensRevisao.length}</strong></div>
@@ -585,10 +553,9 @@
                     <button id="btnDicaRevisao" class="btn-dica">💡 Pedir Dica (3)</button>
                     <div id="revisaoFeedback" class="feedback hidden"></div>
                     <div id="respostaFinalRevisao" style="display: none; margin-top: 15px;" class="feedback-info"></div>
-                    <div id="explicacaoFinalRevisao" style="display: none; margin-top: 10px;" class="explicacao-box"></div>
+                    <div id="explicacaoFinalRevisao" style="display: none; margin-top: 10px; background:#e0f2fe; padding:10px; border-radius:10px;"></div>
                 </div>
             `;
-            // Embaralha opções
             let opcoes = [...erro.opcoes];
             for (let i = opcoes.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -610,31 +577,24 @@
         }
 
         function verificarRespostaRevisao(botao, resposta, correta, erro) {
-            // Bloqueia múltiplos cliques
             const opcoesDiv = document.getElementById('revisaoOpcoesDiv');
             const botoes = opcoesDiv.querySelectorAll('.opcao');
             botoes.forEach(btn => btn.style.pointerEvents = 'none');
             if (resposta === correta) {
                 botao.classList.add('correto');
                 mostrarFeedbackRevisao("✅ Correto! Bom aprendizado!", "sucesso");
-                // Avança para próxima questão após confirmação
                 document.getElementById('btnProximoRevisao').disabled = false;
             } else {
                 botao.classList.add('errado');
-                // Se já usou todas as dicas, revela a resposta
                 if (dicasUsadasRevisao >= 3) {
-                    // Mostra resposta e explicação
-                    const respDiv = document.getElementById('respostaFinalRevisao');
-                    respDiv.innerHTML = `🔍 Resposta correta: ${correta}`;
-                    respDiv.style.display = 'block';
-                    const expDiv = document.getElementById('explicacaoFinalRevisao');
-                    expDiv.innerHTML = `<strong>Explicação:</strong> ${erro.explicacao}`;
-                    expDiv.style.display = 'block';
+                    document.getElementById('respostaFinalRevisao').innerHTML = `🔍 Resposta correta: ${correta}`;
+                    document.getElementById('respostaFinalRevisao').style.display = 'block';
+                    document.getElementById('explicacaoFinalRevisao').innerHTML = `<strong>Explicação:</strong> ${erro.explicacao}`;
+                    document.getElementById('explicacaoFinalRevisao').style.display = 'block';
                     document.getElementById('btnProximoRevisao').disabled = false;
                     mostrarFeedbackRevisao("Dicas esgotadas. Veja a resposta abaixo.", "info");
                 } else {
                     mostrarFeedbackRevisao(`❌ Errado! Use as dicas disponíveis.`, "erro");
-                    // Reabilita os botões para tentar novamente
                     botoes.forEach(btn => btn.style.pointerEvents = 'auto');
                 }
             }
@@ -648,10 +608,8 @@
             dicasUsadasRevisao++;
             const dica = dicasUsadasRevisao === 1 ? erro.dica1 : (dicasUsadasRevisao === 2 ? erro.dica2 : erro.dica3);
             mostrarFeedbackRevisao(`💡 DICA NÍVEL ${dicasUsadasRevisao}: ${dica}`, "info");
-            // Penalidade: perde 1 ponto
             if (acertos > 0) acertos--;
             atualizarUI();
-            // Atualiza botão
             const btn = document.getElementById('btnDicaRevisao');
             if (dicasUsadasRevisao >= 3) {
                 btn.disabled = true;
@@ -679,7 +637,6 @@
         }
 
         function finalizarRevisao() {
-            // Reinicia o timer
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 tempoTotal++;
@@ -687,7 +644,6 @@
                 let seg = (tempoTotal%60).toString().padStart(2,'0');
                 document.getElementById('timer').innerHTML = `${min}:${seg}`;
             }, 1000);
-            // Limpa lista de erros para este nível
             listaErros = [];
             nivelAtual++;
             perguntaAtual = 0;
@@ -701,12 +657,69 @@
             }
         }
 
-        // ========== Final e salvamento ==========
+        // ========== RANKING (melhor desempenho do aluno na turma) ==========
+        async function buscarMelhorRanking(alunoId, turmaId, acertosAtual, tempoAtual) {
+            try {
+                // Busca todas as tentativas do aluno
+                const { data: alunoHistorico, error: errHist } = await supabase
+                    .from('resultados')
+                    .select('acertos, tempo_segundos')
+                    .eq('aluno_id', alunoId)
+                    .eq('jogo_id', JOGO_ID);
+                if (errHist) throw errHist;
+                let melhorAcerto = acertosAtual, melhorTempo = tempoAtual;
+                if (alunoHistorico && alunoHistorico.length > 0) {
+                    for (let reg of alunoHistorico) {
+                        if (reg.acertos > melhorAcerto || (reg.acertos === melhorAcerto && reg.tempo_segundos < melhorTempo)) {
+                            melhorAcerto = reg.acertos;
+                            melhorTempo = reg.tempo_segundos;
+                        }
+                    }
+                }
+                // Busca todos os alunos da mesma turma (apenas seus melhores resultados)
+                const { data: turmaData, error: errTur } = await supabase
+                    .from('resultados')
+                    .select('aluno_id, acertos, tempo_segundos')
+                    .eq('turma_id', turmaId)
+                    .eq('jogo_id', JOGO_ID);
+                if (errTur) throw errTur;
+                // Para cada aluno, calcular seu melhor desempenho
+                const melhoresPorAluno = new Map();
+                for (let reg of turmaData) {
+                    const existing = melhoresPorAluno.get(reg.aluno_id);
+                    if (!existing || reg.acertos > existing.acertos || (reg.acertos === existing.acertos && reg.tempo_segundos < existing.tempo_segundos)) {
+                        melhoresPorAluno.set(reg.aluno_id, { acertos: reg.acertos, tempo: reg.tempo_segundos });
+                    }
+                }
+                let posicao = 1;
+                for (let [_, value] of melhoresPorAluno.entries()) {
+                    if (value.acertos > melhorAcerto || (value.acertos === melhorAcerto && value.tempo < melhorTempo)) {
+                        posicao++;
+                    }
+                }
+                return { posicao, total: melhoresPorAluno.size };
+            } catch (erro) {
+                console.error("Erro ao buscar ranking:", erro);
+                return null;
+            }
+        }
+
         async function salvarResultado() {
             if (!ALUNO_ID || !JOGO_ID) {
                 mostrarFeedbackSalvo("⚠️ Modo teste. Dados não salvos.", "erro");
                 return;
             }
+            const errosDetalhados = detalhesErros.map(e => ({
+                nivel: e.nivel,
+                pergunta: e.pergunta,
+                respostaDada: e.respostaDada,
+                respostaCorreta: e.respostaCorreta,
+                tentativas: e.tentativas,
+                explicacao: e.explicacao,
+                dica1: e.dica1,
+                dica2: e.dica2,
+                dica3: e.dica3
+            }));
             const dados = {
                 aluno_id: ALUNO_ID,
                 jogo_id: JOGO_ID,
@@ -716,7 +729,7 @@
                 habilidade_bncc: HABILIDADE_BNCC,
                 tempo_segundos: tempoTotal,
                 total_questoes: 24,
-                detalhes_erros: detalhesErros
+                detalhes_erros: errosDetalhados
             };
             try {
                 const resp = await fetch(`${SUPABASE_URL}/rest/v1/resultados`, {
@@ -724,8 +737,17 @@
                     headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
                     body: JSON.stringify(dados)
                 });
-                if (resp.ok) mostrarFeedbackSalvo("✅ Dados enviados ao professor!", "sucesso");
-                else mostrarFeedbackSalvo("❌ Erro ao salvar.", "erro");
+                if (resp.ok) {
+                    mostrarFeedbackSalvo("✅ Dados enviados ao professor!", "sucesso");
+                    if (TURMA_ID) {
+                        const ranking = await buscarMelhorRanking(ALUNO_ID, TURMA_ID, acertos, tempoTotal);
+                        if (ranking) {
+                            document.getElementById('rankingPosicao').innerHTML = `${ranking.posicao}º`;
+                            document.getElementById('rankingTotal').innerHTML = `entre ${ranking.total} alunos`;
+                            document.getElementById('rankingContainer').classList.remove('hidden');
+                        }
+                    }
+                } else mostrarFeedbackSalvo("❌ Erro ao salvar.", "erro");
             } catch(e) { console.error(e); }
         }
 
@@ -764,12 +786,9 @@
             document.getElementById('telaInicial').classList.remove('hidden');
         }
 
-        // Atalhos globais
         window.proximoItemRevisao = proximoItemRevisao;
         validarAcesso();
-        document.body.addEventListener('click', () => {
-            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-        }, { once: true });
+        document.body.addEventListener('click', () => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }, { once: true });
     </script>
 </body>
 </html>
