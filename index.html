@@ -176,6 +176,11 @@
             padding: 15px;
             margin-bottom: 20px;
         }
+        .escola-info {
+            font-size: 14px;
+            color: #4a5568;
+            margin-top: 5px;
+        }
         .revisao-item {
             background: #fff5f5;
             border-radius: 15px;
@@ -204,6 +209,7 @@
         <div id="telaInicial">
             <div id="boasVindas" class="boas-vindas">
                 <h2 id="mensagemBoasVindas">🧩 Sequência Numérica</h2>
+                <div id="infoEscolaTurma" class="escola-info"></div>
                 <p id="statusConexao"></p>
             </div>
             <p>Descubra a lógica por trás de cada sequência!</p>
@@ -322,28 +328,40 @@
         const TURMA_ID = urlParams.get('turma_id');
         const HABILIDADE_BNCC = urlParams.get('bncc') || 'EF07MA14';
         let nomeAluno = "Aluno";
+        let nomeEscola = "";
+        let codigoTurma = "";
 
         const btnIniciar = document.getElementById('btnIniciar');
+        const infoDiv = document.getElementById('infoEscolaTurma');
 
-        async function validarAcesso() {
-            if (!ALUNO_ID || !JOGO_ID) {
-                document.getElementById('statusConexao').innerHTML = "⚠️ Link inválido!";
-                btnIniciar.disabled = true;
-                return false;
-            }
+        // Buscar informações da escola e turma
+        async function carregarDadosPersonalizados() {
+            if (!ALUNO_ID || !TURMA_ID) return;
             try {
-                const { data } = await supabase.from('alunos').select('nome_aluno').eq('id', ALUNO_ID).maybeSingle();
-                if (data?.nome_aluno) nomeAluno = data.nome_aluno;
+                // Buscar dados do aluno
+                const { data: alunoData } = await supabase.from('alunos').select('nome_aluno, turma_id').eq('id', ALUNO_ID).maybeSingle();
+                if (alunoData?.nome_aluno) nomeAluno = alunoData.nome_aluno;
+                // Buscar dados da turma e escola
+                const { data: turmaData } = await supabase.from('turmas').select('codigo, escola_id').eq('id', TURMA_ID).maybeSingle();
+                if (turmaData) {
+                    codigoTurma = turmaData.codigo || "Turma";
+                    const { data: escolaData } = await supabase.from('escolas').select('nome').eq('id', turmaData.escola_id).maybeSingle();
+                    if (escolaData?.nome) nomeEscola = escolaData.nome;
+                }
+                let textoInfo = "";
+                if (nomeEscola) textoInfo += `🏫 ${nomeEscola}`;
+                if (codigoTurma) textoInfo += ` • 🧑‍🏫 Turma: ${codigoTurma}`;
+                if (nomeAluno) textoInfo += ` • 👤 ${nomeAluno}`;
+                if (textoInfo) infoDiv.innerHTML = textoInfo;
                 document.getElementById('mensagemBoasVindas').innerHTML = `🧩 Olá, ${nomeAluno}! Vamos aprender?`;
                 btnIniciar.disabled = false;
-                return true;
             } catch(e) {
+                console.log("Erro ao carregar dados personalizados", e);
                 btnIniciar.disabled = false;
-                return true;
             }
         }
 
-        // Base de perguntas (24 questões, 6 por nível)
+        // Base de perguntas (24 questões)
         const niveis = [
             { // Nível 1
                 perguntas: [
@@ -367,7 +385,7 @@
             },
             { // Nível 3
                 perguntas: [
-                    { texto: "1, 2, 4, ?", opcoes: ["6","8","10","12"], correta: "8", dica1: "O que acontece entre 1 e 2?", dica2: "Multiplica por 2", dica3: "1×2=2, 2×2=4, então 4×2=8", explicacao: "Dobre o valor (multiplique por 2)" },
+                    { texto: "1, 2, 4, ?", opcoes: ["6","8","10","12"], correta: "8", dica1: "O que acontece entre 1 e 2?", dica2: "Multiplica por 2", dica3: "1×2=2, 2×2=4, então 4×2=8", explicacao: "Dobre o valor" },
                     { texto: "10, 100, 1000, ?", opcoes: ["1010","2000","10000","5000"], correta: "10000", dica1: "Observe os zeros", dica2: "Multiplica por 10", dica3: "10×10=100, 100×10=1000, então 1000×10=10000", explicacao: "Multiplique por 10" },
                     { texto: "3, 6, 12, ?", opcoes: ["18","24","30","36"], correta: "24", dica1: "Relação entre 3 e 6?", dica2: "Dobra", dica3: "3×2=6, 6×2=12, então 12×2=24", explicacao: "Multiplique por 2" },
                     { texto: "5, 25, 125, ?", opcoes: ["150","250","625","500"], correta: "625", dica1: "5, 25, 125...", dica2: "Multiplica por 5", dica3: "5×5=25, 25×5=125, então 125×5=625", explicacao: "Multiplique por 5" },
@@ -377,39 +395,32 @@
             },
             { // Nível 4
                 perguntas: [
-                    { texto: "1, 1, 2, 3, ?", opcoes: ["4","5","6","7"], correta: "5", dica1: "Cada número depende dos anteriores", dica2: "Some os dois últimos", dica3: "1+1=2, 1+2=3, então 2+3=5", explicacao: "Sequência de Fibonacci: soma dos dois termos anteriores" },
+                    { texto: "1, 1, 2, 3, ?", opcoes: ["4","5","6","7"], correta: "5", dica1: "Cada número depende dos anteriores", dica2: "Some os dois últimos", dica3: "1+1=2, 1+2=3, então 2+3=5", explicacao: "Sequência de Fibonacci" },
                     { texto: "1, 4, 9, ?", opcoes: ["12","15","16","20"], correta: "16", dica1: "1, 4, 9... são?", dica2: "Quadrados perfeitos", dica3: "1²=1, 2²=4, 3²=9, então 4²=16", explicacao: "Quadrado dos números naturais" },
-                    { texto: "0, 1, 3, 6, ?", opcoes: ["8","9","10","11"], correta: "10", dica1: "Diferenças: 1,2,3...", dica2: "Some +1, +2, +3, +4", dica3: "0+1=1, 1+2=3, 3+3=6, então 6+4=10", explicacao: "Adicione +1, +2, +3, +4 a cada termo" },
-                    { texto: "2, 3, 5, 8, ?", opcoes: ["10","12","13","15"], correta: "13", dica1: "Cada número depende dos anteriores", dica2: "Soma dos dois anteriores", dica3: "2+3=5, 3+5=8, então 5+8=13", explicacao: "Sequência de Fibonacci-like" },
-                    { texto: "100, 81, 64, ?", opcoes: ["50","49","40","36"], correta: "49", dica1: "100, 81, 64...", dica2: "Quadrados perfeitos decrescentes", dica3: "10²=100, 9²=81, 8²=64, então 7²=49", explicacao: "Quadrados perfeitos decrescentes (10², 9², 8², 7²)" },
+                    { texto: "0, 1, 3, 6, ?", opcoes: ["8","9","10","11"], correta: "10", dica1: "Diferenças: 1,2,3...", dica2: "Some +1, +2, +3, +4", dica3: "0+1=1, 1+2=3, 3+3=6, então 6+4=10", explicacao: "Adicione +1, +2, +3, +4" },
+                    { texto: "2, 3, 5, 8, ?", opcoes: ["10","12","13","15"], correta: "13", dica1: "Cada número depende dos anteriores", dica2: "Soma dos dois anteriores", dica3: "2+3=5, 3+5=8, então 5+8=13", explicacao: "Outra Fibonacci" },
+                    { texto: "100, 81, 64, ?", opcoes: ["50","49","40","36"], correta: "49", dica1: "100, 81, 64...", dica2: "Quadrados perfeitos decrescentes", dica3: "10²=100, 9²=81, 8²=64, então 7²=49", explicacao: "Quadrados perfeitos decrescentes" },
                     { texto: "2, 4, 16, ?", opcoes: ["32","64","256","512"], correta: "256", dica1: "Relação 2 e 4?", dica2: "Eleva ao quadrado", dica3: "2²=4, 4²=16, então 16²=256", explicacao: "Cada termo é o quadrado do anterior" }
                 ]
             }
         ];
 
         let nivelAtual = 0, perguntaAtual = 0, acertos = 0, erros = 0;
-        let listaErros = [];
-        let detalhesErros = [];
+        let listaErros = [], detalhesErros = [], tentativasPorQuestao = {};
         let tempoTotal = 0, timerInterval = null;
         let podeResponder = true;
-        let itensRevisao = [];
-        let revisaoIndex = 0;
-        let dicasUsadasRevisao = 0;
-        let tentativasPorQuestao = {};
+        let itensRevisao = [], revisaoIndex = 0, dicasUsadasRevisao = 0;
 
         function atualizarProgresso() {
-            const total = niveis[nivelAtual].perguntas.length;
-            const perc = (perguntaAtual / total) * 100;
+            let total = niveis[nivelAtual].perguntas.length;
+            let perc = (perguntaAtual / total) * 100;
             document.getElementById('progressoBar').style.width = perc + '%';
         }
-
         function atualizarUI() {
             document.getElementById('pontuacaoTexto').innerHTML = `⭐ ${acertos}`;
             document.getElementById('errosTexto').innerHTML = `❌ ${erros}`;
         }
-
         function sairJogo() { if (timerInterval) clearInterval(timerInterval); voltarTelaInicial(); }
-
         function iniciarJogo() {
             nivelAtual = 0; perguntaAtual = 0; acertos = 0; erros = 0;
             listaErros = []; detalhesErros = []; tentativasPorQuestao = {};
@@ -428,22 +439,21 @@
             atualizarUI();
             carregarPergunta();
         }
-
         function carregarPergunta() {
             podeResponder = true;
             document.getElementById('feedback').classList.add('hidden');
-            const pergunta = niveis[nivelAtual].perguntas[perguntaAtual];
+            let pergunta = niveis[nivelAtual].perguntas[perguntaAtual];
             document.getElementById('nivelTexto').innerHTML = `Nível ${nivelAtual+1}`;
             document.getElementById('pergunta').innerHTML = pergunta.texto;
             let opcoes = [...pergunta.opcoes];
             for (let i = opcoes.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
+                let j = Math.floor(Math.random() * (i + 1));
                 [opcoes[i], opcoes[j]] = [opcoes[j], opcoes[i]];
             }
-            const container = document.getElementById('opcoes');
+            let container = document.getElementById('opcoes');
             container.innerHTML = '';
             opcoes.forEach(opcao => {
-                const btn = document.createElement('div');
+                let btn = document.createElement('div');
                 btn.className = 'opcao';
                 btn.innerText = opcao;
                 btn.onclick = () => verificarResposta(btn, opcao, pergunta);
@@ -451,15 +461,13 @@
             });
             atualizarProgresso();
         }
-
         function verificarResposta(botao, resposta, pergunta) {
             if (!podeResponder) return;
             podeResponder = false;
-            const correta = pergunta.correta;
-            const key = `${nivelAtual}-${perguntaAtual}`;
+            let correta = pergunta.correta;
+            let key = `${nivelAtual}-${perguntaAtual}`;
             if (!tentativasPorQuestao[key]) tentativasPorQuestao[key] = 0;
             tentativasPorQuestao[key]++;
-
             if (resposta === correta) {
                 botao.classList.add('correto');
                 tocarSom('acerto');
@@ -486,35 +494,26 @@
                 setTimeout(() => proximaPergunta(), 1200);
             }
         }
-
         function mostrarFeedback(msg, tipo) {
-            const fb = document.getElementById('feedback');
+            let fb = document.getElementById('feedback');
             fb.innerHTML = msg;
             fb.className = `feedback feedback-info`;
             fb.classList.remove('hidden');
         }
-
         function proximaPergunta() {
             perguntaAtual++;
             if (perguntaAtual >= niveis[nivelAtual].perguntas.length) {
-                if (listaErros.length > 0) {
-                    iniciarRevisao();
-                } else {
+                if (listaErros.length > 0) iniciarRevisao();
+                else {
                     nivelAtual++;
                     perguntaAtual = 0;
                     if (nivelAtual >= niveis.length) finalizarJogo();
-                    else {
-                        mostrarModalProximoNivel();
-                        carregarPergunta();
-                    }
+                    else { mostrarModalProximoNivel(); carregarPergunta(); }
                 }
-            } else {
-                carregarPergunta();
-            }
+            } else carregarPergunta();
         }
-
         function mostrarModalProximoNivel() {
-            const modal = document.createElement('div');
+            let modal = document.createElement('div');
             modal.className = 'modal';
             modal.innerHTML = `<div class="modal-content"><h2>🎉 Parabéns, ${nomeAluno}!</h2><p>Você concluiu o Nível ${nivelAtual} sem erros! Avançando...</p><button onclick="this.closest('.modal').remove()">▶ CONTINUAR</button></div>`;
             document.body.appendChild(modal);
@@ -522,8 +521,6 @@
                 modal.querySelector('button').onclick = () => { modal.remove(); resolve(); };
             });
         }
-
-        // ========== REVISÃO OBRIGATÓRIA COM DICAS PROGRESSIVAS ==========
         function iniciarRevisao() {
             if (timerInterval) clearInterval(timerInterval);
             itensRevisao = [...listaErros];
@@ -534,15 +531,11 @@
             document.getElementById('msgRevisao').innerHTML = `Você errou ${itensRevisao.length} questão(ões). Vamos revisar! Use as dicas para aprender.`;
             carregarItemRevisao();
         }
-
         function carregarItemRevisao() {
-            if (revisaoIndex >= itensRevisao.length) {
-                finalizarRevisao();
-                return;
-            }
-            const erro = itensRevisao[revisaoIndex];
-            const container = document.getElementById('revisaoContainer');
-            const btnProximo = document.getElementById('btnProximoRevisao');
+            if (revisaoIndex >= itensRevisao.length) { finalizarRevisao(); return; }
+            let erro = itensRevisao[revisaoIndex];
+            let container = document.getElementById('revisaoContainer');
+            let btnProximo = document.getElementById('btnProximoRevisao');
             btnProximo.disabled = true;
             btnProximo.textContent = "▶ PRÓXIMA";
             container.innerHTML = `
@@ -558,27 +551,26 @@
             `;
             let opcoes = [...erro.opcoes];
             for (let i = opcoes.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
+                let j = Math.floor(Math.random() * (i + 1));
                 [opcoes[i], opcoes[j]] = [opcoes[j], opcoes[i]];
             }
-            const opcoesDiv = document.getElementById('revisaoOpcoesDiv');
+            let opcoesDiv = document.getElementById('revisaoOpcoesDiv');
             opcoesDiv.innerHTML = '';
             opcoes.forEach(opcao => {
-                const btn = document.createElement('div');
+                let btn = document.createElement('div');
                 btn.className = 'opcao';
                 btn.innerText = opcao;
                 btn.onclick = () => verificarRespostaRevisao(btn, opcao, erro.correta, erro);
                 opcoesDiv.appendChild(btn);
             });
-            const btnDica = document.getElementById('btnDicaRevisao');
+            let btnDica = document.getElementById('btnDicaRevisao');
             btnDica.onclick = () => pedirDicaRevisao(erro);
             btnDica.disabled = false;
             btnDica.textContent = `💡 Pedir Dica (${3 - dicasUsadasRevisao})`;
         }
-
         function verificarRespostaRevisao(botao, resposta, correta, erro) {
-            const opcoesDiv = document.getElementById('revisaoOpcoesDiv');
-            const botoes = opcoesDiv.querySelectorAll('.opcao');
+            let opcoesDiv = document.getElementById('revisaoOpcoesDiv');
+            let botoes = opcoesDiv.querySelectorAll('.opcao');
             botoes.forEach(btn => btn.style.pointerEvents = 'none');
             if (resposta === correta) {
                 botao.classList.add('correto');
@@ -599,43 +591,28 @@
                 }
             }
         }
-
         function pedirDicaRevisao(erro) {
-            if (dicasUsadasRevisao >= 3) {
-                mostrarFeedbackRevisao("Você já usou todas as dicas!", "info");
-                return;
-            }
+            if (dicasUsadasRevisao >= 3) { mostrarFeedbackRevisao("Você já usou todas as dicas!", "info"); return; }
             dicasUsadasRevisao++;
-            const dica = dicasUsadasRevisao === 1 ? erro.dica1 : (dicasUsadasRevisao === 2 ? erro.dica2 : erro.dica3);
+            let dica = dicasUsadasRevisao === 1 ? erro.dica1 : (dicasUsadasRevisao === 2 ? erro.dica2 : erro.dica3);
             mostrarFeedbackRevisao(`💡 DICA NÍVEL ${dicasUsadasRevisao}: ${dica}`, "info");
             if (acertos > 0) acertos--;
             atualizarUI();
-            const btn = document.getElementById('btnDicaRevisao');
-            if (dicasUsadasRevisao >= 3) {
-                btn.disabled = true;
-                btn.textContent = "💡 Dicas esgotadas";
-            } else {
-                btn.textContent = `💡 Pedir Dica (${3 - dicasUsadasRevisao})`;
-            }
+            let btn = document.getElementById('btnDicaRevisao');
+            if (dicasUsadasRevisao >= 3) { btn.disabled = true; btn.textContent = "💡 Dicas esgotadas"; }
+            else btn.textContent = `💡 Pedir Dica (${3 - dicasUsadasRevisao})`;
         }
-
         function mostrarFeedbackRevisao(msg, tipo) {
-            const fb = document.getElementById('revisaoFeedback');
+            let fb = document.getElementById('revisaoFeedback');
             fb.innerHTML = msg;
             fb.className = `feedback ${tipo === 'sucesso' ? 'feedback-sucesso' : (tipo === 'erro' ? 'feedback-erro' : 'feedback-info')}`;
             fb.classList.remove('hidden');
         }
-
         function proximoItemRevisao() {
             revisaoIndex++;
-            if (revisaoIndex >= itensRevisao.length) {
-                finalizarRevisao();
-            } else {
-                dicasUsadasRevisao = 0;
-                carregarItemRevisao();
-            }
+            if (revisaoIndex >= itensRevisao.length) finalizarRevisao();
+            else { dicasUsadasRevisao = 0; carregarItemRevisao(); }
         }
-
         function finalizarRevisao() {
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
@@ -648,27 +625,15 @@
             nivelAtual++;
             perguntaAtual = 0;
             document.getElementById('telaRevisao').classList.add('hidden');
-            if (nivelAtual >= niveis.length) {
-                finalizarJogo();
-            } else {
-                mostrarModalProximoNivel();
-                document.getElementById('telaJogo').classList.remove('hidden');
-                carregarPergunta();
-            }
+            if (nivelAtual >= niveis.length) finalizarJogo();
+            else { mostrarModalProximoNivel(); document.getElementById('telaJogo').classList.remove('hidden'); carregarPergunta(); }
         }
 
-        // ========== RANKING (melhor desempenho do aluno na turma) ==========
         async function buscarMelhorRanking(alunoId, turmaId, acertosAtual, tempoAtual) {
             try {
-                // Busca todas as tentativas do aluno
-                const { data: alunoHistorico, error: errHist } = await supabase
-                    .from('resultados')
-                    .select('acertos, tempo_segundos')
-                    .eq('aluno_id', alunoId)
-                    .eq('jogo_id', JOGO_ID);
-                if (errHist) throw errHist;
+                let { data: alunoHistorico } = await supabase.from('resultados').select('acertos, tempo_segundos').eq('aluno_id', alunoId).eq('jogo_id', JOGO_ID);
                 let melhorAcerto = acertosAtual, melhorTempo = tempoAtual;
-                if (alunoHistorico && alunoHistorico.length > 0) {
+                if (alunoHistorico) {
                     for (let reg of alunoHistorico) {
                         if (reg.acertos > melhorAcerto || (reg.acertos === melhorAcerto && reg.tempo_segundos < melhorTempo)) {
                             melhorAcerto = reg.acertos;
@@ -676,71 +641,41 @@
                         }
                     }
                 }
-                // Busca todos os alunos da mesma turma (apenas seus melhores resultados)
-                const { data: turmaData, error: errTur } = await supabase
-                    .from('resultados')
-                    .select('aluno_id, acertos, tempo_segundos')
-                    .eq('turma_id', turmaId)
-                    .eq('jogo_id', JOGO_ID);
-                if (errTur) throw errTur;
-                // Para cada aluno, calcular seu melhor desempenho
-                const melhoresPorAluno = new Map();
-                for (let reg of turmaData) {
-                    const existing = melhoresPorAluno.get(reg.aluno_id);
-                    if (!existing || reg.acertos > existing.acertos || (reg.acertos === existing.acertos && reg.tempo_segundos < existing.tempo_segundos)) {
-                        melhoresPorAluno.set(reg.aluno_id, { acertos: reg.acertos, tempo: reg.tempo_segundos });
+                let { data: turmaData } = await supabase.from('resultados').select('aluno_id, acertos, tempo_segundos').eq('turma_id', turmaId).eq('jogo_id', JOGO_ID);
+                let melhoresPorAluno = new Map();
+                if (turmaData) {
+                    for (let reg of turmaData) {
+                        let existing = melhoresPorAluno.get(reg.aluno_id);
+                        if (!existing || reg.acertos > existing.acertos || (reg.acertos === existing.acertos && reg.tempo_segundos < existing.tempo)) {
+                            melhoresPorAluno.set(reg.aluno_id, { acertos: reg.acertos, tempo: reg.tempo_segundos });
+                        }
                     }
                 }
                 let posicao = 1;
                 for (let [_, value] of melhoresPorAluno.entries()) {
-                    if (value.acertos > melhorAcerto || (value.acertos === melhorAcerto && value.tempo < melhorTempo)) {
-                        posicao++;
-                    }
+                    if (value.acertos > melhorAcerto || (value.acertos === melhorAcerto && value.tempo < melhorTempo)) posicao++;
                 }
                 return { posicao, total: melhoresPorAluno.size };
-            } catch (erro) {
-                console.error("Erro ao buscar ranking:", erro);
-                return null;
-            }
+            } catch(e) { console.error(e); return null; }
         }
 
         async function salvarResultado() {
-            if (!ALUNO_ID || !JOGO_ID) {
-                mostrarFeedbackSalvo("⚠️ Modo teste. Dados não salvos.", "erro");
-                return;
-            }
-            const errosDetalhados = detalhesErros.map(e => ({
-                nivel: e.nivel,
-                pergunta: e.pergunta,
-                respostaDada: e.respostaDada,
-                respostaCorreta: e.respostaCorreta,
-                tentativas: e.tentativas,
-                explicacao: e.explicacao,
-                dica1: e.dica1,
-                dica2: e.dica2,
-                dica3: e.dica3
-            }));
-            const dados = {
-                aluno_id: ALUNO_ID,
-                jogo_id: JOGO_ID,
-                turma_id: TURMA_ID || null,
-                acertos: acertos,
-                erros: 24 - acertos,
-                habilidade_bncc: HABILIDADE_BNCC,
-                tempo_segundos: tempoTotal,
-                total_questoes: 24,
-                detalhes_erros: errosDetalhados
+            if (!ALUNO_ID || !JOGO_ID) { mostrarFeedbackSalvo("⚠️ Modo teste. Dados não salvos.", "erro"); return; }
+            let errosDetalhados = detalhesErros.map(e => ({ nivel: e.nivel, pergunta: e.pergunta, respostaDada: e.respostaDada, respostaCorreta: e.respostaCorreta, tentativas: e.tentativas, explicacao: e.explicacao, dica1: e.dica1, dica2: e.dica2, dica3: e.dica3 }));
+            let dados = {
+                aluno_id: ALUNO_ID, jogo_id: JOGO_ID, turma_id: TURMA_ID || null,
+                acertos: acertos, erros: 24 - acertos, habilidade_bncc: HABILIDADE_BNCC,
+                tempo_segundos: tempoTotal, total_questoes: 24, detalhes_erros: errosDetalhados
             };
             try {
-                const resp = await fetch(`${SUPABASE_URL}/rest/v1/resultados`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+                let resp = await fetch(`${SUPABASE_URL}/rest/v1/resultados`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
                     body: JSON.stringify(dados)
                 });
                 if (resp.ok) {
                     mostrarFeedbackSalvo("✅ Dados enviados ao professor!", "sucesso");
                     if (TURMA_ID) {
-                        const ranking = await buscarMelhorRanking(ALUNO_ID, TURMA_ID, acertos, tempoTotal);
+                        let ranking = await buscarMelhorRanking(ALUNO_ID, TURMA_ID, acertos, tempoTotal);
                         if (ranking) {
                             document.getElementById('rankingPosicao').innerHTML = `${ranking.posicao}º`;
                             document.getElementById('rankingTotal').innerHTML = `entre ${ranking.total} alunos`;
@@ -750,22 +685,20 @@
                 } else mostrarFeedbackSalvo("❌ Erro ao salvar.", "erro");
             } catch(e) { console.error(e); }
         }
-
         function mostrarFeedbackSalvo(msg, tipo) {
-            const div = document.getElementById('msgSalvoContainer');
+            let div = document.getElementById('msgSalvoContainer');
             div.innerHTML = `<div class="msg-salvo" style="background:#48bb78;">${msg}</div>`;
             setTimeout(() => div.innerHTML = '', 4000);
         }
-
         function finalizarJogo() {
             if (timerInterval) clearInterval(timerInterval);
             tocarSom('vitoria');
-            const tMin = Math.floor(tempoTotal/60), tSeg = tempoTotal%60, perc = Math.round(acertos/24*100);
+            let tMin = Math.floor(tempoTotal/60), tSeg = tempoTotal%60, perc = Math.round(acertos/24*100);
             document.getElementById('resultadoFinalAcertos').innerHTML = `${acertos}`;
             document.getElementById('resultadoFinalTempo').innerHTML = `${tMin}min ${tSeg}s`;
             document.getElementById('resultadoFinalErros').innerHTML = `${24-acertos}`;
             document.getElementById('resultadoFinalPorcentagem').innerHTML = `${perc}%`;
-            const listaFinal = document.getElementById('listaErrosFinal');
+            let listaFinal = document.getElementById('listaErrosFinal');
             listaFinal.innerHTML = '';
             if (detalhesErros.length === 0) listaFinal.innerHTML = '<li style="color: #48bb78;">🎉 Nenhum erro! Parabéns!</li>';
             else detalhesErros.forEach(e => {
@@ -776,7 +709,6 @@
             document.getElementById('telaFinal').classList.remove('hidden');
             salvarResultado();
         }
-
         function reiniciar() { iniciarJogo(); }
         function voltarTelaInicial() {
             if (timerInterval) clearInterval(timerInterval);
@@ -787,7 +719,7 @@
         }
 
         window.proximoItemRevisao = proximoItemRevisao;
-        validarAcesso();
+        carregarDadosPersonalizados();
         document.body.addEventListener('click', () => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }, { once: true });
     </script>
 </body>
