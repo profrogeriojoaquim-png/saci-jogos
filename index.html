@@ -43,6 +43,7 @@
         .btn-secundario:hover { background: #5a67d8; }
         .btn-voltar { background: #48bb78; }
         .btn-voltar:hover { background: #38a169; }
+        .btn-explicacao { background: #ed8936; font-size: 14px; padding: 10px 20px; }
         .hidden { display: none; }
         .pergunta {
             font-size: 36px;
@@ -109,6 +110,7 @@
         .feedback-sucesso { background: #c6f6d5; color: #22543d; }
         .feedback-erro { background: #fed7d7; color: #742a2a; }
         .feedback-dica { background: #feebc8; color: #744210; }
+        .feedback-incentivo { background: #e0f2fe; color: #075985; }
         .timer { font-size: 24px; font-weight: bold; color: #667eea; }
         .icone-som {
             position: fixed;
@@ -213,6 +215,19 @@
         }
         .revisao-pergunta { font-weight: bold; margin-bottom: 10px; }
         .revisao-resposta { color: #48bb78; margin-top: 10px; }
+        .explicacao-box {
+            background: #e0f2fe;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: left;
+            border-radius: 10px;
+        }
+        .incentivo {
+            font-size: 14px;
+            color: #667eea;
+            margin-top: 10px;
+        }
         @keyframes fadeOut {
             0% { opacity: 1; }
             70% { opacity: 1; }
@@ -230,21 +245,19 @@
 <body>
     <div class="icone-som" onclick="alternarSom()" id="somIcone">🔊</div>
     <div class="container">
-        <!-- Tela inicial -->
         <div id="telaInicial">
             <div id="boasVindas" class="boas-vindas">
                 <h2 id="mensagemBoasVindas">🧩 Sequência Numérica</h2>
                 <p id="statusConexao"></p>
             </div>
-            <p>Descubra o próximo número da sequência!</p>
-            <p>4 níveis • 24 desafios • sistema de recuperação</p>
+            <p>Descubra o próximo número da sequência! Aprenda com cada erro e melhore seu raciocínio.</p>
+            <p>4 níveis • 24 desafios • revisão obrigatória</p>
             <div class="botoes-container">
                 <button id="btnIniciar" onclick="iniciarJogo()" disabled>▶ COMEÇAR MISSÃO</button>
                 <button onclick="voltarParaAtividades()" class="btn-voltar">← VOLTAR PARA ATIVIDADES</button>
             </div>
         </div>
 
-        <!-- Tela do jogo (primeira tentativa) -->
         <div id="telaJogo" class="hidden">
             <div class="info">
                 <span class="info-item" id="nivelTexto">Nível 1/4</span>
@@ -256,23 +269,22 @@
             <div class="pergunta" id="pergunta"></div>
             <div class="opcoes" id="opcoes"></div>
             <div class="feedback hidden" id="feedback"></div>
+            <div class="incentivo hidden" id="incentivo"></div>
             <div class="botoes-container">
                 <button onclick="sairJogo()" class="btn-secundario" style="background: #e53e3e;">🚪 SAIR DO JOGO</button>
             </div>
         </div>
 
-        <!-- Tela de revisão OBRIGATÓRIA -->
         <div id="telaRevisao" class="hidden">
-            <h1>📚 REVISÃO OBRIGATÓRIA</h1>
+            <h1>📚 APRENDENDO COM OS ERROS</h1>
             <p id="msgRevisao"></p>
             <div id="revisaoContainer" class="relatorio-erros"></div>
             <div class="botoes-container">
-                <button id="btnProximoRevisao" onclick="proximoItemRevisao()" disabled>▶ CONFIRMAR APRENDIZADO</button>
+                <button id="btnProximoRevisao" onclick="proximoItemRevisao()" disabled>▶ PRÓXIMA QUESTÃO</button>
                 <button onclick="sairJogo()" class="btn-secundario" style="background: #e53e3e;">🚪 SAIR</button>
             </div>
         </div>
 
-        <!-- Tela final -->
         <div id="telaFinal" class="hidden">
             <h1>🏆 Missão Concluída!</h1>
             <div class="estatisticas">
@@ -290,7 +302,7 @@
             
             <div id="msgSalvoContainer"></div>
             <div class="relatorio-erros" id="relatorioErrosFinal">
-                <h4>📝 Questões que você errou (relatório para o professor):</h4>
+                <h4>📝 Registro de aprendizagem (para o professor):</h4>
                 <ul id="listaErrosFinal"></ul>
             </div>
             <div class="botoes-container">
@@ -366,11 +378,30 @@
         const statusConexao = document.getElementById('statusConexao');
         const mensagemBoasVindas = document.getElementById('mensagemBoasVindas');
 
-        // ======================== VALIDAÇÃO DE ACESSO (CORRIGIDA - NÃO TRAVA) ========================
+        // Frases de incentivo
+        const frasesIncentivo = [
+            "🌟 Continue assim! Você está no caminho certo!",
+            "💪 Muito bem! Cada acerto te deixa mais perto da meta!",
+            "🧠 Ótimo raciocínio! Continue praticando!",
+            "🎯 Você está evoluindo! Parabéns!",
+            "✨ Que bom! A prática leva à perfeição!",
+            "🚀 Show! Você está se tornando um expert!",
+            "📚 Sabedoria é fruto da prática. Continue!"
+        ];
+
+        function mostrarIncentivo() {
+            const frase = frasesIncentivo[Math.floor(Math.random() * frasesIncentivo.length)];
+            const incentivoDiv = document.getElementById('incentivo');
+            incentivoDiv.innerHTML = frase;
+            incentivoDiv.classList.remove('hidden');
+            setTimeout(() => {
+                incentivoDiv.classList.add('hidden');
+            }, 2000);
+        }
+
         async function validarAcesso() {
             if (!ALUNO_ID || !JOGO_ID) {
                 statusConexao.innerHTML = "⚠️ Link inválido! Parâmetros ausentes.";
-                statusConexao.style.color = "#e53e3e";
                 btnIniciar.disabled = true;
                 return false;
             }
@@ -382,28 +413,14 @@
                     .eq('id', ALUNO_ID)
                     .maybeSingle();
                 
-                if (error) {
-                    console.log("Erro na consulta:", error);
-                    mensagemBoasVindas.innerHTML = `🧩 Sequência Numérica`;
-                    statusConexao.innerHTML = "";
-                    btnIniciar.disabled = false;
-                    return true;
-                }
-                
                 if (data && data.nome_aluno) {
                     nomeAluno = data.nome_aluno;
-                    mensagemBoasVindas.innerHTML = `🧩 Olá, ${nomeAluno}! Prepare-se para a missão!`;
-                } else {
-                    mensagemBoasVindas.innerHTML = `🧩 Sequência Numérica`;
+                    mensagemBoasVindas.innerHTML = `🧩 Olá, ${nomeAluno}! Vamos aprender?`;
                 }
-                
                 statusConexao.innerHTML = "";
                 btnIniciar.disabled = false;
                 return true;
-                
             } catch (erro) {
-                console.error("Erro ao buscar aluno:", erro);
-                // NÃO TRAVA O JOGO - apenas usa nome padrão
                 mensagemBoasVindas.innerHTML = `🧩 Sequência Numérica`;
                 statusConexao.innerHTML = "";
                 btnIniciar.disabled = false;
@@ -413,36 +430,36 @@
 
         const niveis = [
             { nome: "Nível 1 - Adição", perguntas: [
-                { texto: "2, 4, 6, ?", opcoes: ["7","8","9","10"], correta: "8", dica: "Some 2 a cada termo" },
-                { texto: "5, 10, 15, ?", opcoes: ["18","20","25","30"], correta: "20", dica: "Some 5 a cada termo" },
-                { texto: "10, 20, 30, ?", opcoes: ["35","40","45","50"], correta: "40", dica: "Some 10 a cada termo" },
-                { texto: "1, 3, 5, ?", opcoes: ["6","7","8","9"], correta: "7", dica: "Números ímpares consecutivos" },
-                { texto: "0, 4, 8, ?", opcoes: ["10","12","14","16"], correta: "12", dica: "Some 4 a cada termo" },
-                { texto: "11, 22, 33, ?", opcoes: ["40","44","55","34"], correta: "44", dica: "Some 11 a cada termo" }
+                { texto: "2, 4, 6, ?", opcoes: ["7","8","9","10"], correta: "8", dica1: "Observe a diferença entre os números", dica2: "A diferença entre eles é sempre a mesma", dica3: "Está aumentando de 2 em 2", explicacao: "Os números aumentam de 2 em 2: 2+2=4, 4+2=6, então 6+2=8" },
+                { texto: "5, 10, 15, ?", opcoes: ["18","20","25","30"], correta: "20", dica1: "Qual a relação entre 5 e 10?", dica2: "Está somando sempre o mesmo número", dica3: "É a tabuada do 5", explicacao: "A sequência soma 5 a cada termo: 5+5=10, 10+5=15, então 15+5=20" },
+                { texto: "10, 20, 30, ?", opcoes: ["35","40","45","50"], correta: "40", dica1: "Observe que são múltiplos de 10", dica2: "Está aumentando de 10 em 10", dica3: "10+10=20, 20+10=30, então 30+10=40", explicacao: "Some 10 a cada termo: 10+10=20, 20+10=30, 30+10=40" },
+                { texto: "1, 3, 5, ?", opcoes: ["6","7","8","9"], correta: "7", dica1: "São números ímpares", dica2: "Pule um número entre eles", dica3: "1+2=3, 3+2=5, então 5+2=7", explicacao: "São os números ímpares consecutivos: 1, 3, 5, 7" },
+                { texto: "0, 4, 8, ?", opcoes: ["10","12","14","16"], correta: "12", dica1: "Observe a diferença entre 0 e 4", dica2: "Está somando 4 a cada termo", dica3: "0+4=4, 4+4=8, então 8+4=12", explicacao: "Some 4 a cada termo para obter o próximo" },
+                { texto: "11, 22, 33, ?", opcoes: ["40","44","55","34"], correta: "44", dica1: "Observe que são múltiplos de 11", dica2: "Está aumentando de 11 em 11", dica3: "11+11=22, 22+11=33, então 33+11=44", explicacao: "Some 11 a cada termo: 33+11=44" }
             ]},
             { nome: "Nível 2 - Subtração", perguntas: [
-                { texto: "20, 18, 16, ?", opcoes: ["15","14","13","12"], correta: "14", dica: "Subtraia 2 a cada termo" },
-                { texto: "3, 6, 9, ?", opcoes: ["10","12","14","15"], correta: "12", dica: "Some 3 a cada termo" },
-                { texto: "100, 90, 80, ?", opcoes: ["70","60","50","40"], correta: "70", dica: "Subtraia 10 a cada termo" },
-                { texto: "1, 5, 9, ?", opcoes: ["12","13","14","15"], correta: "13", dica: "Some 4 a cada termo" },
-                { texto: "50, 45, 40, ?", opcoes: ["35","30","25","20"], correta: "35", dica: "Subtraia 5 a cada termo" },
-                { texto: "2, 5, 8, ?", opcoes: ["10","11","12","13"], correta: "11", dica: "Some 3 a cada termo" }
+                { texto: "20, 18, 16, ?", opcoes: ["15","14","13","12"], correta: "14", dica1: "Os números estão diminuindo", dica2: "Qual a diferença entre 20 e 18?", dica3: "Diminui de 2 em 2: 20-2=18, 18-2=16, então 16-2=14", explicacao: "A sequência diminui 2 a cada termo" },
+                { texto: "3, 6, 9, ?", opcoes: ["10","12","14","15"], correta: "12", dica1: "Observe que são múltiplos de 3", dica2: "Está aumentando de 3 em 3", dica3: "3+3=6, 6+3=9, então 9+3=12", explicacao: "Some 3 a cada termo" },
+                { texto: "100, 90, 80, ?", opcoes: ["70","60","50","40"], correta: "70", dica1: "Os números estão diminuindo", dica2: "Diminui de 10 em 10", dica3: "100-10=90, 90-10=80, então 80-10=70", explicacao: "Subtraia 10 a cada termo" },
+                { texto: "1, 5, 9, ?", opcoes: ["12","13","14","15"], correta: "13", dica1: "Qual a diferença entre 1 e 5?", dica2: "Está aumentando de 4 em 4", dica3: "1+4=5, 5+4=9, então 9+4=13", explicacao: "Some 4 a cada termo" },
+                { texto: "50, 45, 40, ?", opcoes: ["35","30","25","20"], correta: "35", dica1: "Diminui sempre do mesmo valor", dica2: "Qual o valor que diminui?", dica3: "50-5=45, 45-5=40, então 40-5=35", explicacao: "Subtraia 5 a cada termo" },
+                { texto: "2, 5, 8, ?", opcoes: ["10","11","12","13"], correta: "11", dica1: "Qual a diferença entre 2 e 5?", dica2: "Some 3 a cada termo", dica3: "2+3=5, 5+3=8, então 8+3=11", explicacao: "Some 3 a cada termo" }
             ]},
             { nome: "Nível 3 - Multiplicação", perguntas: [
-                { texto: "1, 2, 4, ?", opcoes: ["6","8","10","12"], correta: "8", dica: "Dobre o valor" },
-                { texto: "10, 100, 1000, ?", opcoes: ["1010","2000","10000","5000"], correta: "10000", dica: "Multiplique por 10" },
-                { texto: "3, 6, 12, ?", opcoes: ["18","24","30","36"], correta: "24", dica: "Dobre o valor" },
-                { texto: "5, 25, 125, ?", opcoes: ["150","250","625","500"], correta: "625", dica: "Multiplique por 5" },
-                { texto: "2, 6, 18, ?", opcoes: ["24","36","54","72"], correta: "54", dica: "Multiplique por 3" },
-                { texto: "1, 4, 16, ?", opcoes: ["32","48","64","100"], correta: "64", dica: "Multiplique por 4" }
+                { texto: "1, 2, 4, ?", opcoes: ["6","8","10","12"], correta: "8", dica1: "O que acontece entre 1 e 2?", dica2: "Multiplica por 2", dica3: "1×2=2, 2×2=4, então 4×2=8", explicacao: "Cada termo é o dobro do anterior" },
+                { texto: "10, 100, 1000, ?", opcoes: ["1010","2000","10000","5000"], correta: "10000", dica1: "Observe a quantidade de zeros", dica2: "Multiplica por 10", dica3: "10×10=100, 100×10=1000, então 1000×10=10000", explicacao: "Cada termo é 10 vezes o anterior" },
+                { texto: "3, 6, 12, ?", opcoes: ["18","24","30","36"], correta: "24", dica1: "Qual a relação entre 3 e 6?", dica2: "Dobra a cada termo", dica3: "3×2=6, 6×2=12, então 12×2=24", explicacao: "Multiplique por 2 a cada termo" },
+                { texto: "5, 25, 125, ?", opcoes: ["150","250","625","500"], correta: "625", dica1: "Observe: 5, 25, 125", dica2: "Multiplica por 5", dica3: "5×5=25, 25×5=125, então 125×5=625", explicacao: "Multiplique por 5 a cada termo" },
+                { texto: "2, 6, 18, ?", opcoes: ["24","36","54","72"], correta: "54", dica1: "Qual a relação entre 2 e 6?", dica2: "Multiplica por 3", dica3: "2×3=6, 6×3=18, então 18×3=54", explicacao: "Multiplique por 3 a cada termo" },
+                { texto: "1, 4, 16, ?", opcoes: ["32","48","64","100"], correta: "64", dica1: "1, 4, 16... o que acontece?", dica2: "Multiplica por 4", dica3: "1×4=4, 4×4=16, então 16×4=64", explicacao: "Multiplique por 4 a cada termo" }
             ]},
             { nome: "Nível 4 - Misto", perguntas: [
-                { texto: "1, 1, 2, 3, ?", opcoes: ["4","5","6","7"], correta: "5", dica: "Fibonacci: soma dos dois anteriores" },
-                { texto: "1, 4, 9, ?", opcoes: ["12","15","16","20"], correta: "16", dica: "Quadrados perfeitos" },
-                { texto: "0, 1, 3, 6, ?", opcoes: ["8","9","10","11"], correta: "10", dica: "Some +1, +2, +3, +4..." },
-                { texto: "2, 3, 5, 8, ?", opcoes: ["10","12","13","15"], correta: "13", dica: "Fibonacci: soma dos dois anteriores" },
-                { texto: "100, 81, 64, ?", opcoes: ["50","49","40","36"], correta: "49", dica: "Quadrados perfeitos decrescentes" },
-                { texto: "2, 4, 16, ?", opcoes: ["32","64","256","512"], correta: "256", dica: "Eleva ao quadrado" }
+                { texto: "1, 1, 2, 3, ?", opcoes: ["4","5","6","7"], correta: "5", dica1: "Cada número depende dos anteriores", dica2: "Some os dois últimos", dica3: "1+1=2, 1+2=3, então 2+3=5", explicacao: "Sequência de Fibonacci: soma dos dois termos anteriores" },
+                { texto: "1, 4, 9, ?", opcoes: ["12","15","16","20"], correta: "16", dica1: "1, 4, 9... lembram algo?", dica2: "São quadrados perfeitos", dica3: "1²=1, 2²=4, 3²=9, então 4²=16", explicacao: "São os quadrados dos números naturais: 1, 4, 9, 16" },
+                { texto: "0, 1, 3, 6, ?", opcoes: ["8","9","10","11"], correta: "10", dica1: "Qual a diferença entre os termos?", dica2: "As diferenças aumentam: +1, +2, +3...", dica3: "0+1=1, 1+2=3, 3+3=6, então 6+4=10", explicacao: "Adicione +1, +2, +3, +4 a cada termo" },
+                { texto: "2, 3, 5, 8, ?", opcoes: ["10","12","13","15"], correta: "13", dica1: "Cada número depende dos anteriores", dica2: "Some os dois últimos", dica3: "2+3=5, 3+5=8, então 5+8=13", explicacao: "Cada termo é a soma dos dois anteriores" },
+                { texto: "100, 81, 64, ?", opcoes: ["50","49","40","36"], correta: "49", dica1: "100, 81, 64... são?", dica2: "Quadrados perfeitos decrescentes", dica3: "10²=100, 9²=81, 8²=64, então 7²=49", explicacao: "Quadrados perfeitos: 10², 9², 8², 7²" },
+                { texto: "2, 4, 16, ?", opcoes: ["32","64","256","512"], correta: "256", dica1: "Qual a relação entre 2 e 4?", dica2: "Eleva ao quadrado", dica3: "2²=4, 4²=16, então 16²=256", explicacao: "Cada termo é o quadrado do anterior" }
             ]}
         ];
 
@@ -468,478 +485,5 @@
                     <div class="modal-content">
                         <h2>🎉 PARABÉNS, ${nomeAluno.toUpperCase()}!</h2>
                         <p style="font-size: 24px; margin: 20px 0;">✨ Avançou para o <strong>${nomeNivel}</strong> ✨</p>
-                        <p>Continue assim!</p>
-                        <button onclick="this.closest('.modal').remove()">▶ CONTINUAR</button>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-                modal.querySelector('button').onclick = () => {
-                    modal.remove();
-                    resolve();
-                };
-            });
-        }
-
-        function atualizarProgresso() {
-            const total = niveis[nivelAtual].perguntas.length;
-            const porcentagem = ((perguntaAtual) / total) * 100;
-            document.getElementById('progressoBar').style.width = porcentagem + '%';
-        }
-
-        function atualizarContadores() {
-            document.getElementById('pontuacaoTexto').innerHTML = `⭐ Acertos: ${acertos}`;
-            document.getElementById('errosTexto').innerHTML = `❌ Erros: ${erros}`;
-        }
-
-        function sairJogo() {
-            if (timerInterval) clearInterval(timerInterval);
-            window.close();
-            voltarTelaInicial();
-        }
-
-        function iniciarJogo() {
-            nivelAtual = 0;
-            perguntaAtual = 0;
-            acertos = 0;
-            erros = 0;
-            listaErros = [];
-            listaDetalhesErros = [];
-            tempoTotal = 0;
-            
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                tempoTotal++;
-                const min = Math.floor(tempoTotal / 60).toString().padStart(2, '0');
-                const seg = (tempoTotal % 60).toString().padStart(2, '0');
-                document.getElementById('timer').innerHTML = `${min}:${seg}`;
-            }, 1000);
-            
-            document.getElementById('telaInicial').classList.add('hidden');
-            document.getElementById('telaJogo').classList.remove('hidden');
-            document.getElementById('telaRevisao').classList.add('hidden');
-            document.getElementById('telaFinal').classList.add('hidden');
-            
-            atualizarContadores();
-            carregarPergunta();
-        }
-
-        function carregarPergunta() {
-            podeResponder = true;
-            document.getElementById('feedback').classList.add('hidden');
-            
-            const pergunta = niveis[nivelAtual].perguntas[perguntaAtual];
-            document.getElementById('nivelTexto').innerHTML = `${niveis[nivelAtual].nome} (${perguntaAtual+1}/6)`;
-            document.getElementById('pergunta').innerHTML = pergunta.texto;
-            
-            const opcoesEmbaralhadas = [...pergunta.opcoes];
-            for (let i = opcoesEmbaralhadas.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [opcoesEmbaralhadas[i], opcoesEmbaralhadas[j]] = [opcoesEmbaralhadas[j], opcoesEmbaralhadas[i]];
-            }
-            
-            const containerOpcoes = document.getElementById('opcoes');
-            containerOpcoes.innerHTML = '';
-            
-            opcoesEmbaralhadas.forEach(opcao => {
-                const btn = document.createElement('div');
-                btn.className = 'opcao';
-                btn.innerHTML = opcao;
-                btn.onclick = () => verificarResposta(btn, opcao, pergunta.correta, pergunta);
-                containerOpcoes.appendChild(btn);
-            });
-            
-            atualizarProgresso();
-        }
-
-        function verificarResposta(botao, resposta, correta, pergunta) {
-            if (!podeResponder) return;
-            podeResponder = false;
-            
-            if (resposta === correta) {
-                botao.classList.add('correto');
-                tocarSom('acerto');
-                acertos++;
-                atualizarContadores();
-                mostrarFeedback('✅ Correto!', 'sucesso');
-                
-                setTimeout(() => {
-                    proximaPergunta();
-                }, 600);
-            } else {
-                botao.classList.add('errado');
-                tocarSom('erro');
-                erros++;
-                atualizarContadores();
-                
-                listaErros.push(pergunta);
-                listaDetalhesErros.push({
-                    nivel: nivelAtual + 1,
-                    nivelNome: niveis[nivelAtual].nome,
-                    pergunta: pergunta.texto,
-                    respostaCorreta: correta,
-                    respostaDada: resposta
-                });
-                
-                mostrarFeedback('❌ Errado!', 'erro');
-                
-                setTimeout(() => {
-                    proximaPergunta();
-                }, 800);
-            }
-        }
-
-        function mostrarFeedback(mensagem, tipo) {
-            const feedbackDiv = document.getElementById('feedback');
-            feedbackDiv.innerHTML = mensagem;
-            feedbackDiv.className = `feedback ${tipo === 'sucesso' ? 'feedback-sucesso' : 'feedback-erro'}`;
-            feedbackDiv.classList.remove('hidden');
-        }
-
-        function proximaPergunta() {
-            perguntaAtual++;
-            if (perguntaAtual >= niveis[nivelAtual].perguntas.length) {
-                if (listaErros.length > 0) {
-                    iniciarRevisaoObrigatoria();
-                } else {
-                    nivelAtual++;
-                    perguntaAtual = 0;
-                    
-                    if (nivelAtual >= niveis.length) {
-                        finalizarJogo();
-                    } else {
-                        mostrarModalProximoNivel(niveis[nivelAtual].nome).then(() => {
-                            carregarPergunta();
-                        });
-                    }
-                }
-            } else {
-                carregarPergunta();
-            }
-        }
-
-        // ======================== REVISÃO OBRIGATÓRIA ========================
-        function iniciarRevisaoObrigatoria() {
-            if (timerInterval) clearInterval(timerInterval);
-            
-            itensRevisao = [...listaErros];
-            revisaoIndex = 0;
-            dicasUsadasRevisao = 0;
-            
-            document.getElementById('telaJogo').classList.add('hidden');
-            document.getElementById('telaRevisao').classList.remove('hidden');
-            document.getElementById('msgRevisao').innerHTML = `📌 Você errou ${itensRevisao.length} questão(ões). Revise cada uma para aprender e continuar!`;
-            
-            carregarItemRevisao();
-        }
-
-        function carregarItemRevisao() {
-            if (revisaoIndex >= itensRevisao.length) {
-                finalizarRevisao();
-                return;
-            }
-            
-            const erro = itensRevisao[revisaoIndex];
-            const container = document.getElementById('revisaoContainer');
-            const btnProximo = document.getElementById('btnProximoRevisao');
-            
-            btnProximo.disabled = true;
-            btnProximo.textContent = "▶ CONFIRMAR APRENDIZADO";
-            
-            container.innerHTML = `
-                <div class="revisao-item">
-                    <div class="revisao-pergunta">
-                        <strong>📌 Questão ${revisaoIndex + 1} de ${itensRevisao.length}</strong><br>
-                        ${erro.texto}
-                    </div>
-                    <div class="opcoes" id="revisaoOpcoes"></div>
-                    <button id="btnRevisaoDica" class="btn-dica" onclick="pedirDicaRevisao()">💡 PEDIR AJUDA (${3 - dicasUsadasRevisao} disponíveis)</button>
-                    <div class="feedback hidden" id="revisaoFeedback"></div>
-                    <div id="respostaCorretaContainer" style="margin-top: 15px; display: none;">
-                        <span style="color: #48bb78;">✅ Resposta correta: <strong>${erro.correta}</strong></span>
-                    </div>
-                </div>
-            `;
-            
-            const opcoesEmbaralhadas = [...erro.opcoes];
-            for (let i = opcoesEmbaralhadas.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [opcoesEmbaralhadas[i], opcoesEmbaralhadas[j]] = [opcoesEmbaralhadas[j], opcoesEmbaralhadas[i]];
-            }
-            
-            const opcoesContainer = document.getElementById('revisaoOpcoes');
-            opcoesContainer.innerHTML = '';
-            
-            opcoesEmbaralhadas.forEach(opcao => {
-                const btn = document.createElement('div');
-                btn.className = 'opcao';
-                btn.innerHTML = opcao;
-                btn.onclick = () => verificarRespostaRevisao(btn, opcao, erro.correta);
-                opcoesContainer.appendChild(btn);
-            });
-            
-            const btnDica = document.getElementById('btnRevisaoDica');
-            if (dicasUsadasRevisao >= 3) {
-                btnDica.disabled = true;
-                btnDica.textContent = "💡 AJUDA ESGOTADA";
-            } else {
-                btnDica.disabled = false;
-                btnDica.textContent = `💡 PEDIR AJUDA (${3 - dicasUsadasRevisao} disponíveis)`;
-            }
-        }
-
-        function verificarRespostaRevisao(botao, resposta, correta) {
-            const opcoesContainer = document.getElementById('revisaoOpcoes');
-            const botoes = opcoesContainer.querySelectorAll('.opcao');
-            botoes.forEach(btn => btn.style.pointerEvents = 'none');
-            
-            if (resposta === correta) {
-                botao.classList.add('correto');
-                mostrarFeedbackRevisao("✅ Acertou na revisão! Muito bem!", "sucesso");
-            } else {
-                botao.classList.add('errado');
-                mostrarFeedbackRevisao(`❌ Errou novamente! A resposta correta é ${correta}.`, "erro");
-            }
-            
-            const respostaContainer = document.getElementById('respostaCorretaContainer');
-            respostaContainer.style.display = 'block';
-            
-            const btnProximo = document.getElementById('btnProximoRevisao');
-            btnProximo.disabled = false;
-        }
-
-        function pedirDicaRevisao() {
-            if (dicasUsadasRevisao >= 3) {
-                mostrarFeedbackRevisao("Você já usou todas as dicas disponíveis!", "erro");
-                return;
-            }
-            
-            const erro = itensRevisao[revisaoIndex];
-            dicasUsadasRevisao++;
-            
-            if (acertos > 0) acertos--;
-            atualizarContadores();
-            
-            mostrarFeedbackRevisao(`💡 Dica: ${erro.dica} (Você perdeu 1 ponto por usar dica)`, "dica");
-            
-            const btnDica = document.getElementById('btnRevisaoDica');
-            if (dicasUsadasRevisao >= 3) {
-                btnDica.disabled = true;
-                btnDica.textContent = "💡 AJUDA ESGOTADA";
-            } else {
-                btnDica.textContent = `💡 PEDIR AJUDA (${3 - dicasUsadasRevisao} disponíveis)`;
-            }
-        }
-
-        function mostrarFeedbackRevisao(mensagem, tipo) {
-            const feedbackDiv = document.getElementById('revisaoFeedback');
-            feedbackDiv.innerHTML = mensagem;
-            feedbackDiv.className = `feedback ${tipo === 'sucesso' ? 'feedback-sucesso' : tipo === 'dica' ? 'feedback-dica' : 'feedback-erro'}`;
-            feedbackDiv.classList.remove('hidden');
-        }
-
-        function proximoItemRevisao() {
-            revisaoIndex++;
-            if (revisaoIndex >= itensRevisao.length) {
-                finalizarRevisao();
-            } else {
-                carregarItemRevisao();
-            }
-        }
-
-        function finalizarRevisao() {
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                tempoTotal++;
-                const min = Math.floor(tempoTotal / 60).toString().padStart(2, '0');
-                const seg = (tempoTotal % 60).toString().padStart(2, '0');
-                document.getElementById('timer').innerHTML = `${min}:${seg}`;
-            }, 1000);
-            
-            listaErros = [];
-            nivelAtual++;
-            perguntaAtual = 0;
-            
-            document.getElementById('telaRevisao').classList.add('hidden');
-            
-            if (nivelAtual >= niveis.length) {
-                finalizarJogo();
-            } else {
-                mostrarModalProximoNivel(niveis[nivelAtual].nome).then(() => {
-                    document.getElementById('telaJogo').classList.remove('hidden');
-                    carregarPergunta();
-                });
-            }
-        }
-
-        async function buscarRanking(alunoId, turmaId, acertosAtual, tempoAtual) {
-            try {
-                const { data, error } = await supabase
-                    .from('resultados')
-                    .select('aluno_id, acertos, tempo_segundos')
-                    .eq('turma_id', turmaId);
-                
-                if (error) throw error;
-                if (!data || data.length === 0) return null;
-                
-                let posicao = 1;
-                data.forEach(item => {
-                    if (item.acertos > acertosAtual) {
-                        posicao++;
-                    } else if (item.acertos === acertosAtual && item.tempo_segundos < tempoAtual) {
-                        posicao++;
-                    }
-                });
-                
-                return { posicao, total: data.length };
-            } catch (erro) {
-                console.error("Erro ao buscar ranking:", erro);
-                return null;
-            }
-        }
-
-        async function salvarResultado() {
-            if (!ALUNO_ID || !JOGO_ID) {
-                mostrarFeedbackSalvo("⚠️ Modo de teste. Resultado NÃO foi salvo no banco.", "erro");
-                return false;
-            }
-            
-            const errosDetalhados = listaDetalhesErros.map(erro => ({
-                nivel: erro.nivel,
-                nivel_nome: erro.nivelNome,
-                pergunta: erro.pergunta,
-                resposta_aluno: erro.respostaDada,
-                resposta_correta: erro.respostaCorreta
-            }));
-            
-            const dados = {
-                aluno_id: ALUNO_ID,
-                jogo_id: JOGO_ID,
-                turma_id: TURMA_ID || null,
-                acertos: acertos,
-                erros: 24 - acertos,
-                habilidade_bncc: HABILIDADE_BNCC,
-                tempo_segundos: tempoTotal,
-                total_questoes: 24,
-                detalhes_erros: errosDetalhados
-            };
-            
-            console.log("📤 Enviando para o banco:", dados);
-            
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/resultados`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    },
-                    body: JSON.stringify(dados)
-                });
-                
-                if (response.ok) {
-                    console.log("✅ Resultado salvo com sucesso!");
-                    mostrarFeedbackSalvo("✅ Dados enviados ao professor! Seu desempenho foi registrado.", "sucesso");
-                    
-                    if (TURMA_ID) {
-                        const ranking = await buscarRanking(ALUNO_ID, TURMA_ID, acertos, tempoTotal);
-                        if (ranking) {
-                            document.getElementById('rankingPosicao').innerHTML = `${ranking.posicao}º`;
-                            document.getElementById('rankingTotal').innerHTML = `entre ${ranking.total} alunos`;
-                            document.getElementById('rankingContainer').classList.remove('hidden');
-                        }
-                    }
-                    return true;
-                } else {
-                    const erro = await response.text();
-                    console.error("❌ Erro ao salvar:", erro);
-                    mostrarFeedbackSalvo(`❌ Erro ao salvar: ${erro.substring(0, 200)}`, "erro");
-                    return false;
-                }
-            } catch (erro) {
-                console.error("❌ Erro de conexão:", erro);
-                mostrarFeedbackSalvo(`❌ Erro de conexão: ${erro.message}`, "erro");
-                return false;
-            }
-        }
-
-        function mostrarFeedbackSalvo(mensagem, tipo) {
-            const container = document.getElementById('msgSalvoContainer');
-            if (!container) return;
-            
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `msg-salvo ${tipo === 'sucesso' ? 'feedback-salvo' : 'feedback-erro'}`;
-            msgDiv.innerHTML = mensagem;
-            container.innerHTML = '';
-            container.appendChild(msgDiv);
-            
-            setTimeout(() => {
-                if (msgDiv.parentNode) msgDiv.remove();
-            }, 4000);
-        }
-
-        function finalizarJogo() {
-            if (timerInterval) clearInterval(timerInterval);
-            tocarSom('vitoria');
-            
-            const tempoMin = Math.floor(tempoTotal / 60);
-            const tempoSeg = tempoTotal % 60;
-            const porcentagem = Math.round((acertos / 24) * 100);
-            
-            document.getElementById('resultadoFinalAcertos').innerHTML = `${acertos}`;
-            document.getElementById('resultadoFinalTempo').innerHTML = `${tempoMin}min ${tempoSeg}s`;
-            document.getElementById('resultadoFinalErros').innerHTML = `${24 - acertos}`;
-            document.getElementById('resultadoFinalPorcentagem').innerHTML = `${porcentagem}%`;
-            
-            const listaErrosFinal = document.getElementById('listaErrosFinal');
-            listaErrosFinal.innerHTML = '';
-            
-            if (listaDetalhesErros.length === 0) {
-                listaErrosFinal.innerHTML = '<li style="color:#48bb78;">🎉 Nenhum erro! Parabéns pelo desempenho!</li>';
-                document.getElementById('relatorioErrosFinal').style.background = '#f0fff4';
-            } else {
-                listaDetalhesErros.forEach(erro => {
-                    listaErrosFinal.innerHTML += `
-                        <li style="margin-bottom: 15px; border-bottom: 1px solid #fee; padding-bottom: 10px;">
-                            <strong>📌 Nível ${erro.nivel} (${erro.nivelNome})</strong><br>
-                            Pergunta: ${erro.pergunta}<br>
-                            ✏️ Sua resposta: <span style="color:#e53e3e;">${erro.respostaDada}</span><br>
-                            ✅ Resposta correta: <span style="color:#48bb78;">${erro.respostaCorreta}</span>
-                        </li>
-                    `;
-                });
-            }
-            
-            document.getElementById('telaJogo').classList.add('hidden');
-            document.getElementById('telaRevisao').classList.add('hidden');
-            document.getElementById('telaFinal').classList.remove('hidden');
-            document.getElementById('rankingContainer').classList.add('hidden');
-            
-            salvarResultado();
-        }
-
-        function reiniciar() {
-            iniciarJogo();
-        }
-
-        function voltarTelaInicial() {
-            if (timerInterval) clearInterval(timerInterval);
-            document.getElementById('telaFinal').classList.add('hidden');
-            document.getElementById('telaRevisao').classList.add('hidden');
-            document.getElementById('telaJogo').classList.add('hidden');
-            document.getElementById('telaInicial').classList.remove('hidden');
-        }
-
-        // Expor funções globais
-        window.proximoItemRevisao = proximoItemRevisao;
-        window.pedirDicaRevisao = pedirDicaRevisao;
-
-        validarAcesso();
-
-        document.body.addEventListener('click', () => {
-            if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }, { once: true });
-    </script>
-</body>
-</html>
+                        <p>Continue praticando!</p>
+                        <
