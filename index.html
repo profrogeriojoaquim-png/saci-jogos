@@ -486,4 +486,495 @@
                         <h2>🎉 PARABÉNS, ${nomeAluno.toUpperCase()}!</h2>
                         <p style="font-size: 24px; margin: 20px 0;">✨ Avançou para o <strong>${nomeNivel}</strong> ✨</p>
                         <p>Continue praticando!</p>
-                        <
+                        <button onclick="this.closest('.modal').remove()">▶ CONTINUAR</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                modal.querySelector('button').onclick = () => {
+                    modal.remove();
+                    resolve();
+                };
+            });
+        }
+
+        function atualizarProgresso() {
+            const total = niveis[nivelAtual].perguntas.length;
+            const porcentagem = ((perguntaAtual) / total) * 100;
+            document.getElementById('progressoBar').style.width = porcentagem + '%';
+        }
+
+        function atualizarContadores() {
+            document.getElementById('pontuacaoTexto').innerHTML = `⭐ Acertos: ${acertos}`;
+            document.getElementById('errosTexto').innerHTML = `❌ Erros: ${erros}`;
+        }
+
+        function sairJogo() {
+            if (timerInterval) clearInterval(timerInterval);
+            window.close();
+            voltarTelaInicial();
+        }
+
+        function iniciarJogo() {
+            nivelAtual = 0;
+            perguntaAtual = 0;
+            acertos = 0;
+            erros = 0;
+            listaErros = [];
+            listaDetalhesErros = [];
+            tempoTotal = 0;
+            
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                tempoTotal++;
+                const min = Math.floor(tempoTotal / 60).toString().padStart(2, '0');
+                const seg = (tempoTotal % 60).toString().padStart(2, '0');
+                document.getElementById('timer').innerHTML = `${min}:${seg}`;
+            }, 1000);
+            
+            document.getElementById('telaInicial').classList.add('hidden');
+            document.getElementById('telaJogo').classList.remove('hidden');
+            document.getElementById('telaRevisao').classList.add('hidden');
+            document.getElementById('telaFinal').classList.add('hidden');
+            
+            atualizarContadores();
+            carregarPergunta();
+        }
+
+        function carregarPergunta() {
+            podeResponder = true;
+            document.getElementById('feedback').classList.add('hidden');
+            
+            const pergunta = niveis[nivelAtual].perguntas[perguntaAtual];
+            document.getElementById('nivelTexto').innerHTML = `${niveis[nivelAtual].nome} (${perguntaAtual+1}/6)`;
+            document.getElementById('pergunta').innerHTML = pergunta.texto;
+            
+            const opcoesEmbaralhadas = [...pergunta.opcoes];
+            for (let i = opcoesEmbaralhadas.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [opcoesEmbaralhadas[i], opcoesEmbaralhadas[j]] = [opcoesEmbaralhadas[j], opcoesEmbaralhadas[i]];
+            }
+            
+            const containerOpcoes = document.getElementById('opcoes');
+            containerOpcoes.innerHTML = '';
+            
+            opcoesEmbaralhadas.forEach(opcao => {
+                const btn = document.createElement('div');
+                btn.className = 'opcao';
+                btn.innerHTML = opcao;
+                btn.onclick = () => verificarResposta(btn, opcao, pergunta);
+                containerOpcoes.appendChild(btn);
+            });
+            
+            atualizarProgresso();
+        }
+
+        function verificarResposta(botao, resposta, pergunta) {
+            if (!podeResponder) return;
+            podeResponder = false;
+            const correta = pergunta.correta;
+            
+            if (resposta === correta) {
+                botao.classList.add('correto');
+                tocarSom('acerto');
+                acertos++;
+                atualizarContadores();
+                mostrarFeedback('✅ Correto!', 'sucesso');
+                mostrarIncentivo();
+                
+                setTimeout(() => {
+                    proximaPergunta();
+                }, 800);
+            } else {
+                botao.classList.add('errado');
+                tocarSom('erro');
+                erros++;
+                atualizarContadores();
+                
+                // Mostra explicação imediatamente - APRENDIZAGEM IMEDIATA
+                mostrarFeedbackComExplicacao(pergunta);
+                
+                // Registra o erro para relatório
+                listaErros.push(pergunta);
+                listaDetalhesErros.push({
+                    nivel: nivelAtual + 1,
+                    nivelNome: niveis[nivelAtual].nome,
+                    pergunta: pergunta.texto,
+                    respostaCorreta: correta,
+                    respostaDada: resposta,
+                    explicacao: pergunta.explicacao
+                });
+                
+                setTimeout(() => {
+                    proximaPergunta();
+                }, 3000);
+            }
+        }
+
+        function mostrarFeedback(mensagem, tipo) {
+            const feedbackDiv = document.getElementById('feedback');
+            feedbackDiv.innerHTML = mensagem;
+            feedbackDiv.className = `feedback ${tipo === 'sucesso' ? 'feedback-sucesso' : 'feedback-erro'}`;
+            feedbackDiv.classList.remove('hidden');
+        }
+
+        function mostrarFeedbackComExplicacao(pergunta) {
+            const feedbackDiv = document.getElementById('feedback');
+            feedbackDiv.innerHTML = `
+                ❌ Errado!<br>
+                <div class="explicacao-box">
+                    <strong>📖 Aprendendo com o erro:</strong><br>
+                    ${pergunta.explicacao}
+                </div>
+            `;
+            feedbackDiv.className = 'feedback erro';
+            feedbackDiv.classList.remove('hidden');
+        }
+
+        function proximaPergunta() {
+            perguntaAtual++;
+            if (perguntaAtual >= niveis[nivelAtual].perguntas.length) {
+                if (listaErros.length > 0) {
+                    iniciarRevisaoObrigatoria();
+                } else {
+                    nivelAtual++;
+                    perguntaAtual = 0;
+                    
+                    if (nivelAtual >= niveis.length) {
+                        finalizarJogo();
+                    } else {
+                        mostrarModalProximoNivel(niveis[nivelAtual].nome).then(() => {
+                            carregarPergunta();
+                        });
+                    }
+                }
+            } else {
+                carregarPergunta();
+            }
+        }
+
+        // ======================== REVISÃO OBRIGATÓRIA COM DICAS PROGRESSIVAS ========================
+        function iniciarRevisaoObrigatoria() {
+            if (timerInterval) clearInterval(timerInterval);
+            
+            itensRevisao = [...listaErros];
+            revisaoIndex = 0;
+            dicasUsadasRevisao = 0;
+            
+            document.getElementById('telaJogo').classList.add('hidden');
+            document.getElementById('telaRevisao').classList.remove('hidden');
+            document.getElementById('msgRevisao').innerHTML = `📚 Você errou ${itensRevisao.length} questão(ões). Vamos aprender com os erros antes de continuar!`;
+            
+            carregarItemRevisao();
+        }
+
+        function carregarItemRevisao() {
+            if (revisaoIndex >= itensRevisao.length) {
+                finalizarRevisao();
+                return;
+            }
+            
+            const erro = itensRevisao[revisaoIndex];
+            const container = document.getElementById('revisaoContainer');
+            const btnProximo = document.getElementById('btnProximoRevisao');
+            
+            btnProximo.disabled = true;
+            btnProximo.textContent = "▶ CONFIRMAR APRENDIZADO";
+            
+            container.innerHTML = `
+                <div class="revisao-item">
+                    <div class="revisao-pergunta">
+                        <strong>📌 Questão ${revisaoIndex + 1} de ${itensRevisao.length}</strong><br>
+                        ${erro.texto}
+                    </div>
+                    <div class="opcoes" id="revisaoOpcoes"></div>
+                    <button id="btnRevisaoDica" class="btn-dica" onclick="pedirDicaRevisao()">💡 PEDIR DICA (${3 - dicasUsadasRevisao} disponíveis)</button>
+                    <div class="feedback hidden" id="revisaoFeedback"></div>
+                    <div id="explicacaoFinalContainer" style="margin-top: 15px; display: none;">
+                        <div class="explicacao-box">
+                            <strong>📖 Explicação completa:</strong><br>
+                            ${erro.explicacao}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const opcoesEmbaralhadas = [...erro.opcoes];
+            for (let i = opcoesEmbaralhadas.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [opcoesEmbaralhadas[i], opcoesEmbaralhadas[j]] = [opcoesEmbaralhadas[j], opcoesEmbaralhadas[i]];
+            }
+            
+            const opcoesContainer = document.getElementById('revisaoOpcoes');
+            opcoesContainer.innerHTML = '';
+            
+            opcoesEmbaralhadas.forEach(opcao => {
+                const btn = document.createElement('div');
+                btn.className = 'opcao';
+                btn.innerHTML = opcao;
+                btn.onclick = () => verificarRespostaRevisao(btn, opcao, erro.correta);
+                opcoesContainer.appendChild(btn);
+            });
+            
+            const btnDica = document.getElementById('btnRevisaoDica');
+            btnDica.disabled = false;
+            btnDica.textContent = `💡 PEDIR DICA (${3 - dicasUsadasRevisao} disponíveis)`;
+        }
+
+        function verificarRespostaRevisao(botao, resposta, correta) {
+            const opcoesContainer = document.getElementById('revisaoOpcoes');
+            const botoes = opcoesContainer.querySelectorAll('.opcao');
+            botoes.forEach(btn => btn.style.pointerEvents = 'none');
+            
+            if (resposta === correta) {
+                botao.classList.add('correto');
+                mostrarFeedbackRevisao("✅ Acertou na revisão! Muito bem!", "sucesso");
+            } else {
+                botao.classList.add('errado');
+                mostrarFeedbackRevisao(`❌ Errou novamente! Vamos ver a explicação.`, "erro");
+            }
+            
+            // Mostra explicação completa
+            const explicacaoContainer = document.getElementById('explicacaoFinalContainer');
+            explicacaoContainer.style.display = 'block';
+            
+            const btnProximo = document.getElementById('btnProximoRevisao');
+            btnProximo.disabled = false;
+        }
+
+        function pedirDicaRevisao() {
+            if (dicasUsadasRevisao >= 3) {
+                mostrarFeedbackRevisao("Você já usou todas as dicas disponíveis!", "erro");
+                return;
+            }
+            
+            const erro = itensRevisao[revisaoIndex];
+            dicasUsadasRevisao++;
+            
+            // Penalidade: perde 1 ponto
+            if (acertos > 0) acertos--;
+            atualizarContadores();
+            
+            let dicaTexto = "";
+            if (dicasUsadasRevisao === 1) {
+                dicaTexto = erro.dica1;
+            } else if (dicasUsadasRevisao === 2) {
+                dicaTexto = erro.dica2;
+            } else {
+                dicaTexto = erro.dica3;
+            }
+            
+            mostrarFeedbackRevisao(`💡 DICA NÍVEL ${dicasUsadasRevisao}: ${dicaTexto} (Você perdeu 1 ponto)`, "dica");
+            
+            const btnDica = document.getElementById('btnRevisaoDica');
+            if (dicasUsadasRevisao >= 3) {
+                btnDica.disabled = true;
+                btnDica.textContent = "💡 DICAS ESGOTADAS";
+            } else {
+                btnDica.textContent = `💡 PEDIR DICA (${3 - dicasUsadasRevisao} disponíveis)`;
+            }
+        }
+
+        function mostrarFeedbackRevisao(mensagem, tipo) {
+            const feedbackDiv = document.getElementById('revisaoFeedback');
+            feedbackDiv.innerHTML = mensagem;
+            feedbackDiv.className = `feedback ${tipo === 'sucesso' ? 'feedback-sucesso' : tipo === 'dica' ? 'feedback-dica' : 'feedback-erro'}`;
+            feedbackDiv.classList.remove('hidden');
+        }
+
+        function proximoItemRevisao() {
+            revisaoIndex++;
+            if (revisaoIndex >= itensRevisao.length) {
+                finalizarRevisao();
+            } else {
+                carregarItemRevisao();
+            }
+        }
+
+        function finalizarRevisao() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                tempoTotal++;
+                const min = Math.floor(tempoTotal / 60).toString().padStart(2, '0');
+                const seg = (tempoTotal % 60).toString().padStart(2, '0');
+                document.getElementById('timer').innerHTML = `${min}:${seg}`;
+            }, 1000);
+            
+            listaErros = [];
+            nivelAtual++;
+            perguntaAtual = 0;
+            
+            document.getElementById('telaRevisao').classList.add('hidden');
+            
+            if (nivelAtual >= niveis.length) {
+                finalizarJogo();
+            } else {
+                mostrarModalProximoNivel(niveis[nivelAtual].nome).then(() => {
+                    document.getElementById('telaJogo').classList.remove('hidden');
+                    carregarPergunta();
+                });
+            }
+        }
+
+        async function buscarRanking(alunoId, turmaId, acertosAtual, tempoAtual) {
+            try {
+                const { data, error } = await supabase
+                    .from('resultados')
+                    .select('aluno_id, acertos, tempo_segundos')
+                    .eq('turma_id', turmaId);
+                
+                if (error) throw error;
+                if (!data || data.length === 0) return null;
+                
+                let posicao = 1;
+                data.forEach(item => {
+                    if (item.acertos > acertosAtual) {
+                        posicao++;
+                    } else if (item.acertos === acertosAtual && item.tempo_segundos < tempoAtual) {
+                        posicao++;
+                    }
+                });
+                
+                return { posicao, total: data.length };
+            } catch (erro) {
+                console.error("Erro ao buscar ranking:", erro);
+                return null;
+            }
+        }
+
+        async function salvarResultado() {
+            if (!ALUNO_ID || !JOGO_ID) {
+                mostrarFeedbackSalvo("⚠️ Modo de teste. Resultado NÃO foi salvo no banco.", "erro");
+                return false;
+            }
+            
+            const errosDetalhados = listaDetalhesErros.map(erro => ({
+                nivel: erro.nivel,
+                nivel_nome: erro.nivelNome,
+                pergunta: erro.pergunta,
+                resposta_aluno: erro.respostaDada,
+                resposta_correta: erro.respostaCorreta,
+                explicacao: erro.explicacao
+            }));
+            
+            const dados = {
+                aluno_id: ALUNO_ID,
+                jogo_id: JOGO_ID,
+                turma_id: TURMA_ID || null,
+                acertos: acertos,
+                erros: 24 - acertos,
+                habilidade_bncc: HABILIDADE_BNCC,
+                tempo_segundos: tempoTotal,
+                total_questoes: 24,
+                detalhes_erros: errosDetalhados
+            };
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/resultados`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(dados)
+                });
+                
+                if (response.ok) {
+                    mostrarFeedbackSalvo("✅ Dados enviados ao professor! Seu desempenho foi registrado.", "sucesso");
+                    
+                    if (TURMA_ID) {
+                        const ranking = await buscarRanking(ALUNO_ID, TURMA_ID, acertos, tempoTotal);
+                        if (ranking) {
+                            document.getElementById('rankingPosicao').innerHTML = `${ranking.posicao}º`;
+                            document.getElementById('rankingTotal').innerHTML = `entre ${ranking.total} alunos`;
+                            document.getElementById('rankingContainer').classList.remove('hidden');
+                        }
+                    }
+                    return true;
+                }
+                return false;
+            } catch (erro) {
+                console.error("Erro ao salvar:", erro);
+                return false;
+            }
+        }
+
+        function mostrarFeedbackSalvo(mensagem, tipo) {
+            const container = document.getElementById('msgSalvoContainer');
+            if (!container) return;
+            
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `msg-salvo ${tipo === 'sucesso' ? 'feedback-salvo' : 'feedback-erro'}`;
+            msgDiv.innerHTML = mensagem;
+            container.innerHTML = '';
+            container.appendChild(msgDiv);
+            
+            setTimeout(() => {
+                if (msgDiv.parentNode) msgDiv.remove();
+            }, 4000);
+        }
+
+        function finalizarJogo() {
+            if (timerInterval) clearInterval(timerInterval);
+            tocarSom('vitoria');
+            
+            const tempoMin = Math.floor(tempoTotal / 60);
+            const tempoSeg = tempoTotal % 60;
+            const porcentagem = Math.round((acertos / 24) * 100);
+            
+            document.getElementById('resultadoFinalAcertos').innerHTML = `${acertos}`;
+            document.getElementById('resultadoFinalTempo').innerHTML = `${tempoMin}min ${tempoSeg}s`;
+            document.getElementById('resultadoFinalErros').innerHTML = `${24 - acertos}`;
+            document.getElementById('resultadoFinalPorcentagem').innerHTML = `${porcentagem}%`;
+            
+            const listaErrosFinal = document.getElementById('listaErrosFinal');
+            listaErrosFinal.innerHTML = '';
+            
+            if (listaDetalhesErros.length === 0) {
+                listaErrosFinal.innerHTML = '<li style="color:#48bb78;">🎉 Nenhum erro! Parabéns pelo desempenho!</li>';
+            } else {
+                listaDetalhesErros.forEach(erro => {
+                    listaErrosFinal.innerHTML += `
+                        <li style="margin-bottom: 15px; border-bottom: 1px solid #fee; padding-bottom: 10px;">
+                            <strong>📌 Nível ${erro.nivel} (${erro.nivelNome})</strong><br>
+                            Pergunta: ${erro.pergunta}<br>
+                            ✏️ Sua resposta: <span style="color:#e53e3e;">${erro.respostaDada}</span><br>
+                            ✅ Resposta correta: <span style="color:#48bb78;">${erro.respostaCorreta}</span><br>
+                            📖 Explicação: ${erro.explicacao}
+                        </li>
+                    `;
+                });
+            }
+            
+            document.getElementById('telaJogo').classList.add('hidden');
+            document.getElementById('telaRevisao').classList.add('hidden');
+            document.getElementById('telaFinal').classList.remove('hidden');
+            
+            salvarResultado();
+        }
+
+        function reiniciar() {
+            iniciarJogo();
+        }
+
+        function voltarTelaInicial() {
+            if (timerInterval) clearInterval(timerInterval);
+            document.getElementById('telaFinal').classList.add('hidden');
+            document.getElementById('telaRevisao').classList.add('hidden');
+            document.getElementById('telaJogo').classList.add('hidden');
+            document.getElementById('telaInicial').classList.remove('hidden');
+        }
+
+        window.proximoItemRevisao = proximoItemRevisao;
+        window.pedirDicaRevisao = pedirDicaRevisao;
+
+        validarAcesso();
+
+        document.body.addEventListener('click', () => {
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }, { once: true });
+    </script>
+</body>
+</html>
